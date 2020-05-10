@@ -3,6 +3,19 @@ import ReactDOM from 'react-dom';
 import Webcam from 'react-record-webcam';
 import './styles.css';
 
+type WebcamRenderProps = {
+  status: string;
+  isWebcamOn: boolean;
+  isPreview: boolean;
+  isRecording: boolean;
+  openCamera: () => void;
+  closeCamera: () => void;
+  retake: () => void;
+  start: () => void;
+  stop: () => void;
+  download: () => void;
+};
+
 const App = () => {
   const handleStatus = (status: string) => {
     console.log({ status });
@@ -20,7 +33,7 @@ const App = () => {
           PREVIEW: 'Preview ▶️',
           ERROR: 'Something went wrong :(',
         }}
-        render={(props) => {
+        render={(props: WebcamRenderProps) => {
           return (
             <div className="webcam__render-wrapper">
               <h1 className="webcam__render-status">{props.status}</h1>
