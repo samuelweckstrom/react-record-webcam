@@ -1,12 +1,11 @@
-import React from "react";
-import ReactDOM from "react-dom";
-import Webcam from "react-record-webcam";
-import "./styles.css";
+import React from 'react';
+import ReactDOM from 'react-dom';
+import Webcam from 'react-record-webcam';
+import './styles.css';
 
 const App = () => {
-  const handleStatus = (status) => {
-    console.log("STATUS:", status);
-    // console.log("handleStatus", { status });
+  const handleStatus = (status: string) => {
+    console.log({ status });
   };
 
   return (
@@ -14,12 +13,12 @@ const App = () => {
       <Webcam
         getStatus={handleStatus}
         statusMessages={{
-          INIT: "Starting camera ... ⚡️",
-          CLOSED: "Camera is closed ❌",
-          OPEN: "Camera is open 🎥",
-          RECORDING: "Recording ... ⏺",
-          PREVIEW: "Preview ▶️",
-          ERROR: "Something went wrong :(",
+          INIT: 'Starting camera ... ⚡️',
+          CLOSED: 'Camera is closed ❌',
+          OPEN: 'Camera is open 🎥',
+          RECORDING: 'Recording ... ⏺',
+          PREVIEW: 'Preview ▶️',
+          ERROR: 'Something went wrong :(',
         }}
         render={(props) => {
           return (
@@ -72,4 +71,4 @@ const App = () => {
   );
 };
 
-ReactDOM.render(<App />, document.getElementById("root"));
+ReactDOM.render(<App />, document.getElementById('root'));
