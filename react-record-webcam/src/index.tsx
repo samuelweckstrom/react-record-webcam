@@ -129,6 +129,7 @@ class RecordRtc extends React.PureComponent<RecordRtcProps, RecordRtcState> {
       this.previewRef.current.load();
     }
     this.setState({ ...initialState });
+    this.closeCamera();
   }
 
   async handleOpenCamera(): Promise<void> {
@@ -175,8 +176,10 @@ class RecordRtc extends React.PureComponent<RecordRtcProps, RecordRtcState> {
       if (this.previewRef.current) {
         this.previewRef.current.src = preview;
       }
+      this.closeCamera();
       this.setState({
         ...initialState,
+        isWebcamOn: false,
         isPreview: true,
         status: this.props.statusMessages?.PREVIEW || CAMERA_STATUS.PREVIEW,
       });
@@ -287,9 +290,9 @@ class RecordRtc extends React.PureComponent<RecordRtcProps, RecordRtcState> {
               }
               showCloseCamera={this.state.isWebcamOn}
               showStart={
-                this.state.isWebcamOn ||
-                !this.state.isPreview ||
-                !this.state.isRecording
+                this.state.isWebcamOn &&
+                !this.state.isRecording &&
+                !this.state.isPreview
               }
               showStop={this.state.isRecording}
               showRetake={this.state.isPreview}
