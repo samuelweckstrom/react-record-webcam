@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "name": "demo",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "start": "parcel index.html"
+  },
+  "dependencies": {
+    "react-record-webcam": "*",
+    "react": "^16.9.0",
+    "react-dom": "^16.9.0"
+  }
+}

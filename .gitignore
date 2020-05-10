@@ -1,0 +1,13 @@
+**/node_modules/
+**/.DS_Store
+**/to.do
+**/.vscode
+**/.editorconfig
+**/.prettierrc
+**/.eslintrc
+**/yarn-error.log
+**/.env
+**/.jest
+**/dist
+**/.history
+**/.cache

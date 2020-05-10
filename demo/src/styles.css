@@ -1,0 +1,39 @@
+html,
+body {
+  margin: 0;
+  max-height: 100vh;
+}
+
+.webcam__render-wrapper {
+  width: 100wv;
+  display: flex;
+  flex-flow: column;
+}
+
+.react-record-webcam__video {
+  width: 100%;
+  height: 70%;
+}
+
+.webcam__render-status {
+  margin: 0;
+  background-color: yellow;
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: center;
+}
+
+.webcam__render-action-wrapper {
+  width: 100%;
+  padding: 2rem 0;
+  background-color: blue;
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-around;
+}
+
+.webcam__render-action-button {
+  align-self: center;
+  padding: 1rem 2rem;
+  height: 4rem;
+  font-size: 1.25rem;
+}
