@@ -5,8 +5,8 @@ cache:
  directories:
  - node_modules
 before-install:
- - npm update
+ - npm i -g yarn
 install:
- - npm install
+ - yarn
 script:
- - npm test
+ - yarn test
