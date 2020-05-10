@@ -7,6 +7,8 @@
 
 Webcam video and audio recording component for React. Uses classes so all React versions are supported. Works in all latest browser versions, although Safari requires MediaRecorder to be enabled in the experimental features.
 
+[Demo](https://codesandbox.io/s/react-record-webcam-demo-zog8c?file=/src/App.tsx)
+
 ## How to
 
 ### Install
