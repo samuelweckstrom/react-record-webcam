@@ -6,6 +6,7 @@
   ],
   "scripts": {
     "start:project": "yarn workspace react-record-webcam start",
+    "build:project": "yarn workspace react-record-webcam build",
     "start:demo": "yarn workspace demo start",
     "test": "jest"
   },
