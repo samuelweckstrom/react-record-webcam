@@ -238,7 +238,7 @@ class RecordRtc extends React.PureComponent<RecordRtcProps, RecordRtcState> {
             }
           `}
         </style>
-        <div className={`${this.props.cssNamespace}__wrapper}`}>
+        <div className={`${this.props.cssNamespace}__wrapper`}>
           <Video
             cssNamespace={this.props.cssNamespace}
             style={{ display: `${this.state.isWebcamOn ? 'block' : 'none'}` }}
