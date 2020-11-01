@@ -236,22 +236,6 @@ export class RecordWebcam extends React.PureComponent<
           `}
         </style>
         <div className={`${this.props.cssNamespace}__wrapper`}>
-          <Video
-            cssNamespace={this.props.cssNamespace}
-            style={{ display: `${this.state.isWebcamOn ? 'block' : 'none'}` }}
-            autoPlay
-            muted
-            loop
-            ref={this.webcamRef}
-          />
-          <Video
-            cssNamespace={this.props.cssNamespace}
-            style={{ display: `${this.state.isPreview ? 'block' : 'none'}` }}
-            autoPlay
-            muted
-            loop
-            ref={this.previewRef}
-          />
           {this.props.render &&
             this.props.render({
               isWebcamOn: this.state.isWebcamOn,
@@ -296,6 +280,22 @@ export class RecordWebcam extends React.PureComponent<
               showDownload={this.state.isPreview}
             />
           )}
+          <Video
+            cssNamespace={this.props.cssNamespace}
+            style={{ display: `${this.state.isWebcamOn ? 'block' : 'none'}` }}
+            autoPlay
+            muted
+            loop
+            ref={this.webcamRef}
+          />
+          <Video
+            cssNamespace={this.props.cssNamespace}
+            style={{ display: `${this.state.isPreview ? 'block' : 'none'}` }}
+            autoPlay
+            muted
+            loop
+            ref={this.previewRef}
+          />
         </div>
       </>
     );
