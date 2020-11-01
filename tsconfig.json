@@ -5,7 +5,7 @@
     "esModuleInterop": true,
     "jsx": "react",
     "module": "es6",
-    "moduleResolution": "classic",
+    "moduleResolution": "node",
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
@@ -30,7 +30,6 @@
     "./src/**/*"
   ],
   "exclude": [
-    "./src/__tests__",
     "node_modules"
   ]
 }
