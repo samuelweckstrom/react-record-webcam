@@ -44,14 +44,12 @@ const App = () => {
                     Open camera
                   </button>
                   <button
-                    disabled={!props.isWebcamOn || !props.isPreview}
+                    disabled={!props.isWebcamOn || props.isPreview}
                     onClick={props.closeCamera}
                   >
                     Close camera
                   </button>
-                  <button disabled={!props.isPreview} onClick={props.retake}>
-                    Retake
-                  </button>
+
                   <button
                     disabled={
                       !props.isWebcamOn || props.isRecording || props.isPreview
@@ -62,6 +60,9 @@ const App = () => {
                   </button>
                   <button disabled={!props.isRecording} onClick={props.stop}>
                     Stop recording
+                  </button>
+                  <button disabled={!props.isPreview} onClick={props.retake}>
+                    Retake
                   </button>
                   <button disabled={!props.isPreview} onClick={props.download}>
                     Download
@@ -88,8 +89,7 @@ const App = () => {
           </button>
           <button
             disabled={
-              recordWebcam.status === CAMERA_STATUS.INIT ||
-              recordWebcam.status === CAMERA_STATUS.RECORDING ||
+              recordWebcam.status === CAMERA_STATUS.CLOSED ||
               recordWebcam.status === CAMERA_STATUS.PREVIEW
             }
             onClick={recordWebcam.close}
@@ -98,6 +98,7 @@ const App = () => {
           </button>
           <button
             disabled={
+              recordWebcam.status === CAMERA_STATUS.CLOSED ||
               recordWebcam.status === CAMERA_STATUS.RECORDING ||
               recordWebcam.status === CAMERA_STATUS.PREVIEW
             }
