@@ -43,6 +43,12 @@ const App = () => {
                   >
                     Open camera
                   </button>
+                  <button
+                    disabled={!props.isWebcamOn || !props.isPreview}
+                    onClick={props.closeCamera}
+                  >
+                    Close camera
+                  </button>
                   <button disabled={!props.isPreview} onClick={props.retake}>
                     Retake
                   </button>
@@ -79,6 +85,16 @@ const App = () => {
             onClick={recordWebcam.open}
           >
             Open camera
+          </button>
+          <button
+            disabled={
+              recordWebcam.status === CAMERA_STATUS.INIT ||
+              recordWebcam.status === CAMERA_STATUS.RECORDING ||
+              recordWebcam.status === CAMERA_STATUS.PREVIEW
+            }
+            onClick={recordWebcam.close}
+          >
+            Close camera
           </button>
           <button
             disabled={
