@@ -23,16 +23,16 @@ export type Recorder = {
   stopRecording(): Promise<void>;
   getDataURL(): Promise<string>;
   getBlob(): Promise<Blob>;
-  stream: MediaStream;
+  stream: any;
 };
 
 export enum CAMERA_STATUS {
-  INIT = 'Starting camera ...',
-  CLOSED = 'Camera is closed',
-  OPEN = 'Camera is open',
-  RECORDING = 'Recording ...',
-  PREVIEW = 'Preview',
-  ERROR = 'Error',
+  INIT = 'INIT',
+  CLOSED = 'CLOSED',
+  OPEN = 'OPEN',
+  RECORDING = 'RECORDING',
+  PREVIEW = 'PREVIEW',
+  ERROR = 'ERROR',
 }
 
 export enum BUTTON_LABELS {
