@@ -4,7 +4,7 @@ import { RecorderOptions, Recorder } from './types';
 
 type CaptureUserMedia = {
   stream: MediaStream;
-  recordRtc: Recorder;
+  recordRtc: any;
 };
 
 async function captureUserMedia(
