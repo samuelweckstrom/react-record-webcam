@@ -128,16 +128,27 @@ export function useRecordWebcam(args?: useRecordWebcamArgs) {
     }
   };
 
+  const getRecording = async () => {
+    try {
+      return await recorder?.getBlob();
+    } catch (error) {
+      setStatus(CAMERA_STATUS.ERROR);
+      console.error({ error });
+      return;
+    }
+  };
+
   return {
-    webcamRef,
-    previewRef,
-    status,
-    stopStream,
     close,
-    open,
-    stop,
-    start,
-    retake,
     download,
+    open,
+    previewRef,
+    retake,
+    getRecording,
+    start,
+    status,
+    stop,
+    stopStream,
+    webcamRef,
   };
 }
