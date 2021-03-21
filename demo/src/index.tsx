@@ -67,6 +67,15 @@ const App = () => {
                   <button disabled={!props.isPreview} onClick={props.download}>
                     Download
                   </button>
+                  <button
+                    disabled={!props.isPreview}
+                    onClick={async () => {
+                      const blob = await props.getRecording();
+                      getRecordingFileRenderProp(blob);
+                    }}
+                  >
+                    Get recording blob
+                  </button>
                 </div>
               </div>
             );
@@ -123,6 +132,12 @@ const App = () => {
             onClick={recordWebcam.download}
           >
             Download
+          </button>
+          <button
+            disabled={recordWebcam.status !== CAMERA_STATUS.PREVIEW}
+            onClick={getRecordingFileHooks}
+          >
+            Get recording
           </button>
         </div>
 
