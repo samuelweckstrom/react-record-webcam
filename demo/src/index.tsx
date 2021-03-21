@@ -5,23 +5,20 @@ import {
   useRecordWebcam,
   CAMERA_STATUS,
 } from 'react-record-webcam';
+import type { WebcamRenderProps, RecordWebcamHook } from 'react-record-webcam';
 import './styles.css';
 
-type WebcamRenderProps = {
-  status: string;
-  isWebcamOn: boolean;
-  isPreview: boolean;
-  isRecording: boolean;
-  openCamera: () => void;
-  closeCamera: () => void;
-  retake: () => void;
-  start: () => void;
-  stop: () => void;
-  download: () => void;
-};
-
 const App = () => {
-  const recordWebcam = useRecordWebcam();
+  const recordWebcam: RecordWebcamHook = useRecordWebcam();
+
+  const getRecordingFileHooks = async () => {
+    const blob = await recordWebcam.getRecording();
+    console.log({ blob });
+  };
+
+  const getRecordingFileRenderProp = async (blob: Blob | undefined) => {
+    console.log({ blob });
+  };
 
   return (
     <div>
@@ -66,6 +63,14 @@ const App = () => {
                   </button>
                   <button disabled={!props.isPreview} onClick={props.download}>
                     Download
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const blob = await props.getRecording();
+                      getRecordingFileRenderProp(blob);
+                    }}
+                  >
+                    Get recording blob
                   </button>
                 </div>
               </div>
@@ -124,6 +129,7 @@ const App = () => {
           >
             Download
           </button>
+          <button onClick={getRecordingFileHooks}>Get recording</button>
         </div>
 
         <video
