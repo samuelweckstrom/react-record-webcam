@@ -23,6 +23,11 @@ type WebcamRenderProps = {
 const App = () => {
   const recordWebcam = useRecordWebcam();
 
+  const getRecordingFile = async () => {
+    const blob = await recordWebcam.getRecording();
+    console.log({ blob });
+  };
+
   return (
     <div>
       <div className="demo-section">
@@ -124,6 +129,7 @@ const App = () => {
           >
             Download
           </button>
+          <button onClick={getRecordingFile}>Get recording</button>
         </div>
 
         <video
