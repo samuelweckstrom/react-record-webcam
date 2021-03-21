@@ -40,6 +40,7 @@ type RenderControlsArgs = {
   stop: () => void;
   retake: () => void;
   download: () => void;
+  getRecording: () => void;
   status: string;
 };
 
@@ -75,6 +76,7 @@ export class RecordWebcam extends React.PureComponent<
     super(props);
     this.closeCamera = this.closeCamera.bind(this);
     this.download = this.download.bind(this);
+    this.getRecording = this.getRecording.bind(this);
     this.handleOpenCamera = this.handleOpenCamera.bind(this);
     this.handleError = this.handleError.bind(this);
     this.handleCloseCamera = this.handleCloseCamera.bind(this);
@@ -127,6 +129,14 @@ export class RecordWebcam extends React.PureComponent<
     }
     this.setState({ ...initialState });
     this.closeCamera();
+  }
+
+  handleError(error: Error) {
+    this.setState({
+      ...initialState,
+      status: CAMERA_STATUS.ERROR,
+    });
+    console.error({ error });
   }
 
   async handleOpenCamera(): Promise<void> {
@@ -205,12 +215,13 @@ export class RecordWebcam extends React.PureComponent<
     }
   }
 
-  handleError(error: Error) {
-    this.setState({
-      ...initialState,
-      status: CAMERA_STATUS.ERROR,
-    });
-    console.error({ error });
+  async getRecording(): Promise<Blob | undefined> {
+    try {
+      return await this.recorder?.getBlob();
+    } catch (error) {
+      this.handleError(error);
+      return;
+    }
   }
 
   render() {
@@ -247,6 +258,7 @@ export class RecordWebcam extends React.PureComponent<
               stop: this.handleStopRecording,
               retake: this.handleRetakeRecording,
               download: this.download,
+              getRecording: this.getRecording,
               status: this.state.status,
             })}
           {!this.props.render && (
@@ -263,6 +275,7 @@ export class RecordWebcam extends React.PureComponent<
               stop={this.handleStopRecording}
               retake={this.handleRetakeRecording}
               download={this.download}
+              getRecording={this.getRecording}
               labels={this.props.controlLabels}
               showOpenCamera={
                 !this.state.isWebcamOn &&

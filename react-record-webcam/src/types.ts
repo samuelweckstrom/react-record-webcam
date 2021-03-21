@@ -18,6 +18,34 @@ export type RecorderOptions = {
   };
 };
 
+export type WebcamRenderProps = {
+  status: string;
+  isWebcamOn: boolean;
+  isPreview: boolean;
+  isRecording: boolean;
+  openCamera(): void;
+  closeCamera(): void;
+  retake(): void;
+  start(): void;
+  stop(): void;
+  download(): void;
+  getRecording(): Blob | undefined;
+};
+
+export type RecordWebcamHook = {
+  close(): void;
+  download(): void;
+  open(): void;
+  retake(): void;
+  getRecording(): void;
+  start(): void;
+  stop(): void;
+  stopStream(): void;
+  status: CAMERA_STATUS;
+  previewRef: React.RefObject<HTMLVideoElement>;
+  webcamRef: React.RefObject<HTMLVideoElement>;
+};
+
 export type Recorder = {
   startRecording(): Promise<void>;
   stopRecording(): Promise<void>;
