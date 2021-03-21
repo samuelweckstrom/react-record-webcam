@@ -1,7 +1,12 @@
 import React from 'react';
 import record from './record';
 import { saveFile } from './utils';
-import { RecorderOptions, Recorder, CAMERA_STATUS } from './types';
+import {
+  RecorderOptions,
+  Recorder,
+  RecordWebcamHook,
+  CAMERA_STATUS,
+} from './types';
 
 const DEFAULT_OPTIONS: RecorderOptions = Object.freeze({
   type: 'video',
@@ -21,7 +26,7 @@ type useRecordWebcamArgs = {
   options?: RecorderOptions;
 };
 
-export function useRecordWebcam(args?: useRecordWebcamArgs) {
+export function useRecordWebcam(args?: useRecordWebcamArgs): RecordWebcamHook {
   const webcamRef = React.useRef<HTMLVideoElement>(null);
   const previewRef = React.useRef<HTMLVideoElement>(null);
   const [status, setStatus] = React.useState<CAMERA_STATUS>(
