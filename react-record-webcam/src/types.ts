@@ -18,6 +18,19 @@ export type RecorderOptions = {
   };
 };
 
+export type WebcamRenderProps = {
+  status: string;
+  isWebcamOn: boolean;
+  isPreview: boolean;
+  isRecording: boolean;
+  openCamera(): void;
+  closeCamera(): void;
+  retake(): void;
+  start(): void;
+  stop(): void;
+  download(): void;
+  getRecording(): Blob | undefined;
+};
 export type Recorder = {
   startRecording(): Promise<void>;
   stopRecording(): Promise<void>;

@@ -9,6 +9,7 @@ type ControlsProps = {
   stop(): void;
   retake(): void;
   download(): void;
+  getRecording(): void;
   showOpenCamera: boolean;
   showCloseCamera: boolean;
   showStart: boolean;
