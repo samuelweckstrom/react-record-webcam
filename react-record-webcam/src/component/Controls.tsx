@@ -2,7 +2,6 @@ import React from 'react';
 import { BUTTON_LABELS, CAMERA_STATUS } from '../constants';
 
 type ControlsProps = {
-  cssNamespace?: string;
   openCamera(): void;
   closeCamera(): void;
   start(): void;
@@ -11,6 +10,7 @@ type ControlsProps = {
   download(): void;
   getRecording(): void;
   status: keyof typeof CAMERA_STATUS;
+  cssNamespace?: string;
   labels?: {
     CLOSE: string | number;
     DOWNLOAD: string | number;
@@ -77,7 +77,7 @@ export const Controls = (props: ControlsProps): React.ReactElement => {
         {showStop && (
           <button
             className={`${props.cssNamespace}__controls-button`}
-            onClick={stop}
+            onClick={props.stop}
           >
             {props.labels?.STOP || BUTTON_LABELS.STOP}
           </button>
