@@ -1,77 +1,69 @@
-type RecordingType = 'video' | 'audio';
-type RecordingMimeType =
-  | 'video/mp4'
-  | 'audio/webm'
-  | 'video/webm;codecs=vp9'
-  | 'video/webm;codecs=vp8'
-  | 'video/webm;codecs=h264';
+type AudioCodec = 'aac' | 'opus';
+type VideoCodec = 'av1' | 'avc' | 'vp8';
+
+export type FileMimeType = 'video/mp4' | 'video/webm';
+export type FileType = 'mp4' | 'webm';
+
+export type RecordingOptions = {
+  mimeType: FileMimeType;
+};
 
 export type RecorderOptions = {
-  type: RecordingType;
-  mimeType: RecordingMimeType;
-  video: {
-    minWidth: number;
-    minHeight: number;
-    maxWidth: number;
-    maxHeight: number;
-    minAspectRatio: number;
+  aspectRatio: number;
+  height: number;
+  type: 'video';
+  width: number;
+  isNewSize?: boolean;
+  mimeType?: string;
+  mute?: boolean;
+  disableLogs?: boolean;
+};
+
+export type RecordWebcamOptions = {
+  codec?: {
+    audio: AudioCodec;
+    video: VideoCodec;
   };
+  filename: string;
+  recordingLength: number;
+  fileType?: FileType;
+  width?: number;
+  height?: number;
+  aspectRatio?: number;
 };
 
 export type WebcamRenderProps = {
-  status: string;
-  isWebcamOn: boolean;
   isPreview: boolean;
   isRecording: boolean;
-  openCamera(): void;
+  isWebcamOn: boolean;
+  status: string;
   closeCamera(): void;
+  download(): void;
+  getRecording(): Blob | undefined;
+  openCamera(): void;
   retake(): void;
   start(): void;
   stop(): void;
-  download(): void;
-  getRecording(): Blob | undefined;
 };
 
 export type RecordWebcamHook = {
+  previewRef: React.RefObject<HTMLVideoElement>;
+  status: string | number;
+  webcamRef: React.RefObject<HTMLVideoElement>;
   close(): void;
   download(): void;
+  getRecording(): void;
   open(): void;
   retake(): void;
-  getRecording(): void;
   start(): void;
   stop(): void;
   stopStream(): void;
-  status: CAMERA_STATUS;
-  previewRef: React.RefObject<HTMLVideoElement>;
-  webcamRef: React.RefObject<HTMLVideoElement>;
 };
 
 export type Recorder = {
+  stream: any;
+  getBlob(): Promise<Blob>;
+  getDataURL(): Promise<string>;
   startRecording(): Promise<void>;
   stopRecording(): Promise<void>;
-  getDataURL(): Promise<string>;
-  getBlob(): Promise<Blob>;
-  stream: any;
 };
-
-export enum CAMERA_STATUS {
-  INIT = 'INIT',
-  CLOSED = 'CLOSED',
-  OPEN = 'OPEN',
-  RECORDING = 'RECORDING',
-  PREVIEW = 'PREVIEW',
-  ERROR = 'ERROR',
-}
-
-export enum BUTTON_LABELS {
-  OPEN = 'Open camera',
-  CLOSE = 'Close camera',
-  START = 'Start recording',
-  STOP = 'Stop recording',
-  RETAKE = 'Retake recording',
-  DOWNLOAD = 'Download recording',
-}
-
-export enum NAMESPACES {
-  CSS = 'react-record-webcam',
-}
