@@ -12,3 +12,8 @@ body {
 .demo-section:last-child {
   border: none;
 }
+
+video {
+  width: 90%;  
+  height: auto;
+}
