@@ -24,8 +24,8 @@ export type RecordWebcamOptions = {
     audio: AudioCodec;
     video: VideoCodec;
   };
-  filename: string;
-  recordingLength: number;
+  filename?: string;
+  recordingLength?: number;
   fileType?: FileType;
   width?: number;
   height?: number;
