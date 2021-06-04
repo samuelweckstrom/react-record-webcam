@@ -18,7 +18,6 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "outDir": "./dist",
-    "sourceMap": true,
     "skipLibCheck": true,
     "strict": true,
     "strictBindCallApply": true,
