@@ -1,7 +1,7 @@
 {
   "name": "react-record-webcam",
   "description": "A React webcam recording hook and component 🎬📹",
-  "version": "0.0.16",
+  "version": "0.0.17",
   "main": "dist/index.js",
   "files": [
     "dist"
