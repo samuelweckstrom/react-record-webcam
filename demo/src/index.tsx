@@ -5,9 +5,10 @@ import './styles.css';
 
 const OPTIONS = {
   fileName: 'test-filename',
-  fileType: 'mp4',
+  mimeType: 'video/x-matroska;codecs=avc1',
   width: 1920,
   height: 1080,
+  disableLogs: true,
 } as const;
 
 function App() {

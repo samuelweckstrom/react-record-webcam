@@ -1,12 +1,13 @@
 import { RecordOptions } from './types';
 
 export const DEFAULT_OPTIONS: RecordOptions = {
-  type: 'video',
-  mimeType: 'video/webm',
   aspectRatio: 1.7,
+  disableLogs: true,
   fileName: String(new Date().getTime()),
-  width: 1280,
   height: 720,
+  mimeType: 'video/webm',
+  type: 'video',
+  width: 1280,
 } as const;
 
 export const BUTTON_LABELS = {
