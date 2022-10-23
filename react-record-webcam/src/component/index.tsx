@@ -2,27 +2,28 @@ import React from 'react';
 import { Video } from './Video';
 import { Controls } from './Controls';
 import { mediaRecorder } from '../mediaRecorder';
-import { RecordWebcamOptions, Recorder } from '../types';
 import { saveFile } from '../utils';
-import { CAMERA_STATUS, NAMESPACES, RECORDER_OPTIONS } from '../constants';
+import { NAMESPACES, DEFAULT_OPTIONS } from '../constants';
+import type { Recorder } from '../mediaRecorder';
+import type { RecordOptions, WebcamStatus } from '../types';
 
-type RenderControlsArgs = {
-  openCamera: () => void;
+export type WebcamRenderProps = {
+  status: WebcamStatus;
   closeCamera: () => void;
+  download: () => Promise<void>;
+  getRecording: () => Promise<Blob | null>;
+  openCamera: () => Promise<void>;
+  retake: () => void;
   start: () => void;
   stop: () => void;
-  retake: () => void;
-  download: () => void;
-  getRecording: () => void;
-  status: string;
 };
 
-type RecordWebcamProps = {
+export type RecordWebcamProps = {
   cssNamespace?: string;
   downloadFileName?: string;
-  options?: RecordWebcamOptions;
-  getStatus?(status: string): void;
-  render?({}: RenderControlsArgs): void;
+  options?: RecordOptions;
+  getStatus?: (status: WebcamStatus) => void;
+  render?: (props: WebcamRenderProps) => void;
   controlLabels?: {
     CLOSE: string | number;
     DOWNLOAD: string | number;
@@ -33,8 +34,8 @@ type RecordWebcamProps = {
   };
 };
 
-type RecordWebcamState = {
-  status: keyof typeof CAMERA_STATUS;
+export type RecordWebcamState = {
+  status: WebcamStatus;
 };
 
 export class RecordWebcam extends React.PureComponent<
@@ -43,43 +44,22 @@ export class RecordWebcam extends React.PureComponent<
 > {
   constructor(props: RecordWebcamProps) {
     super(props);
-    this.closeCamera = this.closeCamera.bind(this);
     this.download = this.download.bind(this);
     this.getRecording = this.getRecording.bind(this);
-    this.handleOpenCamera = this.handleOpenCamera.bind(this);
-    this.handleError = this.handleError.bind(this);
-    this.handleCloseCamera = this.handleCloseCamera.bind(this);
-    this.handleRetakeRecording = this.handleRetakeRecording.bind(this);
-    this.handleStartRecording = this.handleStartRecording.bind(this);
-    this.handleStopRecording = this.handleStopRecording.bind(this);
     this.openCamera = this.openCamera.bind(this);
+    this.handleError = this.handleError.bind(this);
+    this.close = this.close.bind(this);
+    this.retake = this.retake.bind(this);
+    this.start = this.start.bind(this);
+    this.stop = this.stop.bind(this);
   }
-  state = {
-    status: CAMERA_STATUS.CLOSED,
+  state: RecordWebcamState = {
+    status: 'CLOSED',
   };
   recorder!: Recorder;
-  recorderOptions = {
-    ...RECORDER_OPTIONS,
-    ...{
-      mimeType: `video/${this.props.options?.fileType || 'mp4'};codecs=${
-        this.props.options?.codec?.video ||
-        this.props.options?.fileType === 'webm'
-          ? 'vp8'
-          : 'avc'
-      },${
-        this.props.options?.codec?.audio ||
-        this.props.options?.fileType === 'webm'
-          ? 'opus'
-          : 'aac'
-      }`,
-      width: this.props.options?.width || RECORDER_OPTIONS.width,
-      height: this.props.options?.height || RECORDER_OPTIONS.height,
-      aspectRatio:
-        this.props.options?.aspectRatio || RECORDER_OPTIONS.aspectRatio,
-      isNewSize: Boolean(
-        this.props.options?.width || this.props.options?.height
-      ),
-    },
+  recorderOptions: RecordOptions = {
+    ...DEFAULT_OPTIONS,
+    ...this.props.options,
   };
   webcamRef = React.createRef<HTMLVideoElement>();
   previewRef = React.createRef<HTMLVideoElement>();
@@ -88,92 +68,98 @@ export class RecordWebcam extends React.PureComponent<
     cssNamespace: NAMESPACES.CSS,
   };
 
+  options = { ...this.recorderOptions, ...this.props.options };
+
   componentDidUpdate(_: RecordWebcamProps, prevState: RecordWebcamState) {
     if (this.state.status !== prevState.status) {
       if (this.props.getStatus) this.props.getStatus(this.state.status);
     }
   }
 
-  async openCamera(): Promise<void> {
-    const recorderInit = await mediaRecorder(this.recorderOptions);
-    this.recorder = recorderInit;
-    if (this.webcamRef.current) {
-      this.webcamRef.current.srcObject = recorderInit.stream;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1700));
-  }
-
-  closeCamera() {
-    if (this.recorder.stream.id) this.recorder.stream.stop();
-  }
-
-  handleCloseCamera() {
-    if (this.previewRef.current) {
-      this.previewRef.current.removeAttribute('src');
-      this.previewRef.current.load();
-    }
-    this.setState({ status: CAMERA_STATUS.CLOSED });
-    this.closeCamera();
-  }
-
-  handleError(error: Error) {
+  handleError(error: unknown) {
     this.setState({
-      status: CAMERA_STATUS.ERROR,
+      status: 'ERROR',
     });
     console.error({ error });
   }
 
-  async handleOpenCamera(): Promise<void> {
+  stopStream() {
+    if (this.recorder.stream.id && this.recorder?.stopRecording) {
+      this.recorder.stream.stop();
+    }
+  }
+
+  close() {
+    if (this.previewRef.current) {
+      this.previewRef.current.removeAttribute('src');
+      this.previewRef.current.load();
+    }
+    this.setState({ status: 'CLOSED' });
+    this.stopStream();
+  }
+
+  async openCamera(): Promise<void> {
     try {
       this.setState({
-        status: CAMERA_STATUS.INIT,
+        status: 'INIT',
       });
+      const recorderInit = await mediaRecorder(this.options);
+      this.recorder = recorderInit;
+      if (this.webcamRef.current) {
+        this.webcamRef.current.srcObject = recorderInit.stream;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1700));
+      this.setState({
+        status: 'OPEN',
+      });
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  async start(): Promise<void> {
+    try {
+      if (this.recorder?.startRecording) {
+        await this.recorder.startRecording();
+        this.setState({
+          status: 'RECORDING',
+        });
+        if (this.props.options?.recordingLength) {
+          const length = this.props.options.recordingLength * 1000;
+          await new Promise((resolve) => setTimeout(resolve, length));
+          await this.stop();
+          this.stop();
+        }
+      }
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  async stop(): Promise<void> {
+    try {
+      if (this.recorder?.stopRecording && this.recorder?.getBlob) {
+        await this.recorder.stopRecording();
+        const blob = await this.recorder.getBlob();
+        const preview = window.URL.createObjectURL(blob);
+        if (this.previewRef.current) {
+          this.previewRef.current.src = preview;
+        }
+        this.stopStream();
+        this.setState({
+          status: 'PREVIEW',
+        });
+        return;
+      }
+      throw new Error('Stop recording error!');
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  async retake(): Promise<void> {
+    try {
       await this.openCamera();
-      this.setState({
-        status: CAMERA_STATUS.OPEN,
-      });
-    } catch (error) {
-      this.handleError(error);
-    }
-  }
-
-  async handleStartRecording(): Promise<void> {
-    try {
-      await this.recorder.startRecording();
-      this.setState({
-        status: CAMERA_STATUS.RECORDING,
-      });
-      if (this.props.options?.recordingLength) {
-        const length = this.props.options.recordingLength * 1000;
-        await new Promise((resolve) => setTimeout(resolve, length));
-        await this.handleStopRecording();
-        this.closeCamera();
-      }
-    } catch (error) {
-      this.handleError(error);
-    }
-  }
-
-  async handleStopRecording(): Promise<void> {
-    try {
-      await this.recorder.stopRecording();
-      const blob = await this.recorder.getBlob();
-      const preview = window.URL.createObjectURL(blob);
-      if (this.previewRef.current) {
-        this.previewRef.current.src = preview;
-      }
-      this.closeCamera();
-      this.setState({
-        status: CAMERA_STATUS.PREVIEW,
-      });
-    } catch (error) {
-      this.handleError(error);
-    }
-  }
-
-  async handleRetakeRecording(): Promise<void> {
-    try {
-      await this.handleOpenCamera();
     } catch (error) {
       this.handleError(error);
     }
@@ -181,22 +167,28 @@ export class RecordWebcam extends React.PureComponent<
 
   async download(): Promise<void> {
     try {
-      const blob = await this.recorder.getBlob();
-      const filename = `${
-        this.props.options?.filename || new Date().getTime()
-      }.${this.props.options?.fileType || 'mp4'}`;
-      saveFile(filename, blob);
+      if (this.recorder?.getBlob) {
+        const blob = await this.recorder.getBlob();
+        const filename = `${
+          this.props.options?.filename || new Date().getTime()
+        }.${this.props.options?.fileType || 'mp4'}`;
+        saveFile(filename, blob);
+      }
     } catch (error) {
       this.handleError(error);
     }
   }
 
-  async getRecording(): Promise<Blob | undefined> {
+  async getRecording(): Promise<Blob | null> {
     try {
-      return await this.recorder?.getBlob();
+      if (this.recorder?.getBlob) {
+        const blob = await this.recorder.getBlob();
+        return blob;
+      }
+      return null;
     } catch (error) {
       this.handleError(error);
-      return;
+      return null;
     }
   }
 
@@ -224,11 +216,11 @@ export class RecordWebcam extends React.PureComponent<
         </style>
         <div className={`${this.props.cssNamespace}__wrapper`}>
           {this.props?.render?.({
-            openCamera: this.handleOpenCamera,
-            closeCamera: this.handleCloseCamera,
-            start: this.handleStartRecording,
-            stop: this.handleStopRecording,
-            retake: this.handleRetakeRecording,
+            openCamera: this.openCamera,
+            closeCamera: this.close,
+            start: this.start,
+            stop: this.stop,
+            retake: this.retake,
             download: this.download,
             getRecording: this.getRecording,
             status: this.state.status,
@@ -240,25 +232,25 @@ export class RecordWebcam extends React.PureComponent<
           )}
           {!this.props.render && (
             <Controls
-              closeCamera={this.handleCloseCamera}
+              closeCamera={this.close}
               cssNamespace={this.props.cssNamespace}
               download={this.download}
               getRecording={this.getRecording}
               labels={this.props.controlLabels}
-              openCamera={this.handleOpenCamera}
-              retake={this.handleRetakeRecording}
-              start={this.handleStartRecording}
+              openCamera={this.openCamera}
+              retake={this.retake}
+              start={this.start}
               status={this.state.status}
-              stop={this.handleStopRecording}
+              stop={this.stop}
             />
           )}
           <Video
             cssNamespace={this.props.cssNamespace}
             style={{
               display: `${
-                this.state.status !== CAMERA_STATUS.CLOSED &&
-                (this.state.status === CAMERA_STATUS.OPEN ||
-                  this.state.status === CAMERA_STATUS.RECORDING)
+                this.state.status !== 'CLOSED' &&
+                (this.state.status === 'OPEN' ||
+                  this.state.status === 'RECORDING')
                   ? 'block'
                   : 'none'
               }`,
@@ -272,8 +264,8 @@ export class RecordWebcam extends React.PureComponent<
             cssNamespace={this.props.cssNamespace}
             style={{
               display: `${
-                this.state.status !== CAMERA_STATUS.CLOSED &&
-                this.state.status === CAMERA_STATUS.PREVIEW
+                this.state.status !== 'CLOSED' &&
+                this.state.status === 'PREVIEW'
                   ? 'block'
                   : 'none'
               }`,

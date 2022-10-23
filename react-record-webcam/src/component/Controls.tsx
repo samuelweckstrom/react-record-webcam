@@ -1,15 +1,16 @@
 import React from 'react';
-import { BUTTON_LABELS, CAMERA_STATUS } from '../constants';
+import { BUTTON_LABELS } from '../constants';
+import type { WebcamStatus } from '../types';
 
 type ControlsProps = {
-  openCamera(): void;
-  closeCamera(): void;
-  start(): void;
-  stop(): void;
-  retake(): void;
-  download(): void;
-  getRecording(): void;
-  status: keyof typeof CAMERA_STATUS;
+  openCamera: () => void;
+  closeCamera: () => void;
+  start: () => void;
+  stop: () => void;
+  retake: () => void;
+  download: () => void;
+  getRecording: () => void;
+  status: WebcamStatus;
   cssNamespace?: string;
   labels?: {
     CLOSE: string | number;
@@ -23,16 +24,15 @@ type ControlsProps = {
 
 export const Controls = (props: ControlsProps): React.ReactElement => {
   const showOpenCamera =
-    props.status !== CAMERA_STATUS.OPEN &&
-    props.status !== CAMERA_STATUS.RECORDING &&
-    props.status !== CAMERA_STATUS.PREVIEW;
+    props.status !== 'OPEN' &&
+    props.status !== 'RECORDING' &&
+    props.status !== 'PREVIEW';
   const showCloseCamera =
-    props.status !== CAMERA_STATUS.CLOSED &&
-    (props.status === CAMERA_STATUS.OPEN || CAMERA_STATUS.RECORDING);
-  const showStart = props.status === CAMERA_STATUS.OPEN;
-  const showStop = props.status === CAMERA_STATUS.RECORDING;
-  const showRetake = props.status === CAMERA_STATUS.PREVIEW;
-  const showDownload = props.status === CAMERA_STATUS.PREVIEW;
+    props.status !== 'CLOSED' && (props.status === 'OPEN' || 'RECORDING');
+  const showStart = props.status === 'OPEN';
+  const showStop = props.status === 'RECORDING';
+  const showRetake = props.status === 'PREVIEW';
+  const showDownload = props.status === 'PREVIEW';
 
   return (
     <>
