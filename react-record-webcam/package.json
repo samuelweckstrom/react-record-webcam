@@ -28,5 +28,8 @@
     "component",
     "hook",
     "video"
-  ]
+  ],
+  "devDependencies": {
+    "@types/recordrtc": "^5.6.9"
+  }
 }
