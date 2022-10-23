@@ -68,10 +68,14 @@ or
 | ------------- | ------------- |
 |`fileName<string>`|Filename for download|
 |`recordingLength<number>`|Length of recording in seconds|
-|`mimeType<enum>`| `'audio/webm'`<br>`'audio/webm;codecs=pcm'`<br>`'video/mp4'`<br>`'video/webm'`<br>`'video/webm;codecs=vp9'`<br>`'video/webm;codecs=vp8'`<br>`'video/webm;codecs=h264'`<br>`'video/x-matroska;codecs=avc1'`<br>`'video/mpeg'`<br>`'audio/wav'`<br>`'audio/ogg'`
+|`mimeType<enum>`|`'video/mp4'`<br>`'video/webm'`<br>`'video/webm;codecs=vp9'`<br>`'video/webm;codecs=vp8'`<br>`'video/webm;codecs=h264'`<br>`'video/x-matroska;codecs=avc1'`<br>`'video/mpeg'`
 |`aspectRatio<number>`|Video aspect ratio, default is 1.7|
 |`width<number>`| Video width|
 |`height<number>`| Video height|
+|`disableLogs<boolean>`|Disable debug logs, on by default|
+
+
+Note: file extension and codec is determined from the passed `mimeType` option, so use any of the above ones that are currently supported.
 
 
 <br>
