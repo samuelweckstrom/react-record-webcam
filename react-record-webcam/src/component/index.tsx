@@ -169,11 +169,16 @@ export class RecordWebcam extends React.PureComponent<
     try {
       if (this.recorder?.getBlob) {
         const blob = await this.recorder.getBlob();
-        const filename = `${
-          this.props.options?.filename || new Date().getTime()
-        }.${this.props.options?.fileType || 'mp4'}`;
+        const fileTypeFromMimeType =
+          this.recorderOptions.mimeType?.split('video/')[1]?.split(';')[0] ||
+          'mp4';
+        const fileType =
+          fileTypeFromMimeType === 'x-matroska' ? 'mkv' : fileTypeFromMimeType;
+        const filename = `${this.recorderOptions.fileName}.${fileType}`;
         saveFile(filename, blob);
+        return;
       }
+      throw new Error('Error downloading file!');
     } catch (error) {
       this.handleError(error);
     }

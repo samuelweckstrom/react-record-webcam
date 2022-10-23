@@ -121,9 +121,12 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
     try {
       if (recorder?.getBlob) {
         const blob = await recorder.getBlob();
-        const filename = `${options?.filename || new Date().getTime()}.${
-          options?.fileType || 'mp4'
-        }`;
+        const fileTypeFromMimeType =
+          recorderOptions.mimeType?.split('video/')[1]?.split(';')[0] || 'mp4';
+        console.log({ fileTypeFromMimeType, recorderOptions });
+        const fileType =
+          fileTypeFromMimeType === 'x-matroska' ? 'mkv' : fileTypeFromMimeType;
+        const filename = `${recorderOptions.fileName}.${fileType}`;
         saveFile(filename, blob);
         return;
       }
