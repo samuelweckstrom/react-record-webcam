@@ -6,7 +6,7 @@
 
 [![TypeScript](https://badges.frapsoft.com/typescript/code/typescript.svg?v=101)](https://github.com/ellerbrock/typescript-badges/)
 
-Webcam recording hook and component for React. Works in all latest browser versions, although Safari requires MediaRecorder to be enabled in the experimental features.
+Webcam recording hook and component for React. Works in all latest browser versions, although Safari requires MediaRecorder to be enabled in settings under experimental features.
 
 [Demo](https://codesandbox.io/s/react-record-webcam-demo-zog8c)
 
@@ -16,19 +16,19 @@ Webcam recording hook and component for React. Works in all latest browser versi
 ```
 npm i react-record-webcam
 ```
-<i>Or</i>
+<i>or</i>
 ```
 yarn add react-record-webcam
 ```
 
 
-## Use hook
+## Example use for hook
 
 ```
 import { useRecordWebcam } from 'react-record-webcam'
 
 function RecordVideo(props) {
-  const recordWebcam = useRecordWebcam();
+  const recordWebcam = useRecordWebcam({ frameRate: 60 });
 
   const saveFile = async () => {
     const blob = await recordWebcam.getRecording();
@@ -50,38 +50,34 @@ function RecordVideo(props) {
   )
 }
 ```
-Import the hook and initialize it in your function. The hook returns refs for both preview and recording video elements, functions to control recording (open, start, stop, retake, download) and camera status.
+Import the hook and initialize it in your function. The hook returns refs for  preview and recording video elements, functions to control recording (open, start, stop, retake, download) and camera status.
 
-```
-import { useRecordWebcam, CAMERA_STATUS } from 'react-record-webcam'
-```
+### Passing options
 
-You can also import the `CAMERA_STATUS` constant to check for different states and toggle your UI accordingly. Check the CodeSandbox [demo](https://codesandbox.io/s/react-record-webcam-demo-zog8c?file=/src/App.tsx) for a more thorough example on how to do this.
+Hook and component accept an options object to control things like width/height etc.
 
-Passing options:
-```
-const OPTIONS = { ... }
+`const recordWebcam = useRecordWebcam(<OPTIONS>);`
 
-const recordWebcam = useRecordWebcam(OPTIONS);
-```
+or
+
+`<RecordWebcam options={<OPTIONS>} />`
+
 
 
 | Options  ||
 | ------------- | ------------- |
-|`filename: string`              |Filename for download|
-|`recordingLength: number`       |Length of recording in seconds|
-|`fileType: 'mp4'` \| `'webm'`|File container for download. Will also set mimeType. |
-|`aspectRatio: number`|Video aspect ratio, default is 1.77|
-|`codec: object`|`{ audio: 'aac' \| 'opus', video: 'av1' \| 'avc' \| 'vp8' }`|
-|`width: number`| Video width|
-|`height: number`| Video height|
-|`disableLogs: boolean`|Disable status logs from console|
+|`fileName<string>`|Filename for download|
+|`recordingLength<number>`|Length of recording in seconds|
+|`mimeType<enum>`| `'audio/webm'`<br>`'audio/webm;codecs=pcm'`<br>`'video/mp4'`<br>`'video/webm'`<br>`'video/webm;codecs=vp9'`<br>`'video/webm;codecs=vp8'`<br>`'video/webm;codecs=h264'`<br>`'video/x-matroska;codecs=avc1'`<br>`'video/mpeg'`<br>`'audio/wav'`<br>`'audio/ogg'`
+|`aspectRatio<number>`|Video aspect ratio, default is 1.7|
+|`width<number>`| Video width|
+|`height<number>`| Video height|
 
 
 <br>
 
 
-## Use component
+## Example use for component
 
 ```
 import { RecordWebcam } from 'react-record-webcam'
@@ -127,38 +123,30 @@ function RecordVideo(props) {
 
 |Props||
 | ------------- | ------------- |
-|`cssNamespace: string`    |Set a namespace for the component CSS classes|
-|`downloadFileName: string` |Filename for video download |
-|`getStatus: () => string` |Callback to get webcam status  |
-|`recordingLength: number`  |Set max recording length in seconds  |
-|`namespace: string`| Pass own CSS namespace|
-|`options: object` |Options for recording video|
-||`fileType: 'mp4' \| 'webm'`|
-||`width: number`|
-||`height: number`|
-||`aspectRatio: number`|
-||`codec: { audio: 'aac' \| 'opus', video: 'av1' \| 'avc' \| 'vp8' }`|
-||`disableLogs: boolean`|
-|`controlLabels: object`|Pass custom labels to control buttons|
-||`CLOSE: string \| number`|
-||`DOWNLOAD: string \| number`|
-||`OPEN: string \| number`|
-||`RETAKE: string \| number`|
-||`START: string \| number`|
-||`STOP: string \| number`|
+|`cssNamespace<string>`    |Set a namespace for the component CSS classes|
+|`downloadFileName<string>` |File name for video download |
+|`getStatus<fn:string>` |Callback to get webcam status  |
+|`options` | Same options as in hook version|
+|`controlLabels`|Pass custom labels to control buttons|
+||`CLOSE<string \| number>`|
+||`DOWNLOAD<string \| number>`|
+||`OPEN<string \| number>`|
+||`RETAKE<string \| number>`|
+||`START<string \| number>`|
+||`STOP<string \| number>`|
 |`render`  |Render prop that passes status and controls|
-|| `openCamera: () => void`|
-|| `closeCamera: () => void`|
-|| `start: () => void`|
-|| `stop: () => void`|
-|| `retake: () => void`|
-|| `download: () => void`|
-|| `getRecording: () => void`|
-|| `status: string`|
+|| `status<string>`|
+|| `closeCamera<fn:void>`|
+|| `download<fn:void>`|
+|| `getRecording<fn:void>`|
+|| `openCamera<fn:void>`|
+|| `retake<fn:void>`|
+|| `start<fn:void>`|
+|| `stop<fn:void>`|
 
 <br>
 
-You can use the below default class names or pass your own namespace to replace the default `react-record-webcam`. 
+You can use the below default class names or pass your own namespace to replace the default `react-record-webcam`.
 
 | className |
 | ------------- |
@@ -167,3 +155,8 @@ You can use the below default class names or pass your own namespace to replace 
 |`react-record-webcam__video`
 |`react-record-webcam__controls`
 |`react-record-webcam__controls-button`
+
+
+## License
+
+[MIT](LICENSE)

@@ -1,55 +1,51 @@
 import React from 'react';
 import { mediaRecorder } from '../mediaRecorder';
 import { saveFile } from '../utils';
-import {
-  RecorderOptions,
-  Recorder,
-  RecordWebcamHook,
-  RecordWebcamOptions,
-} from '../types';
-import { CAMERA_STATUS, RECORDER_OPTIONS } from '../constants';
+import { DEFAULT_OPTIONS } from '../constants';
+import type { Recorder } from '../mediaRecorder';
+import type { RecordOptions, WebcamStatus } from '../types';
 
-export function useRecordWebcam(
-  options?: RecordWebcamOptions
-): RecordWebcamHook {
+export type UseRecordWebcam = {
+  previewRef: React.RefObject<HTMLVideoElement>;
+  status: WebcamStatus;
+  webcamRef: React.RefObject<HTMLVideoElement>;
+  close: () => void;
+  download: () => void;
+  getRecording: () => void;
+  open: () => void;
+  retake: () => void;
+  start: () => void;
+  stop: () => void;
+  stopStream: () => void;
+};
+
+export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
   const webcamRef = React.useRef<HTMLVideoElement>(null);
   const previewRef = React.useRef<HTMLVideoElement>(null);
-  const [status, setStatus] = React.useState<keyof typeof CAMERA_STATUS>(
-    CAMERA_STATUS.CLOSED
-  );
+  const [status, setStatus] = React.useState<WebcamStatus>('CLOSED');
   const [recorder, setRecorder] = React.useState<Recorder | null>(null);
 
-  const [recorderOptions, setRecorderOptions] =
-    React.useState<RecorderOptions>(RECORDER_OPTIONS);
-
-  React.useEffect(() => {
-    if (options) {
-      setRecorderOptions({
-        ...RECORDER_OPTIONS,
-        mimeType: `video/${options.fileType || 'mp4'};codecs=${
-          options?.codec?.video || options.fileType === 'webm' ? 'vp8' : 'avc'
-        },${
-          options?.codec?.audio || options.fileType === 'webm' ? 'opus' : 'aac'
-        }`,
-        width: options.width || RECORDER_OPTIONS.width,
-        height: options.height || RECORDER_OPTIONS.height,
-        aspectRatio: options?.aspectRatio || RECORDER_OPTIONS.aspectRatio,
-        isNewSize: Boolean(options?.width || options?.height),
-      });
-    }
-  }, []);
+  const recorderOptions: RecordOptions = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+  };
 
   const openCamera = async () => {
-    const recorderInit = await mediaRecorder(recorderOptions);
-    setRecorder(recorderInit);
-    if (webcamRef?.current) {
-      webcamRef.current.srcObject = recorderInit.stream;
+    try {
+      const recorderInit = await mediaRecorder(recorderOptions);
+      setRecorder(recorderInit);
+      if (webcamRef?.current) {
+        webcamRef.current.srcObject = recorderInit.stream;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1700));
+    } catch (error) {
+      setStatus('ERROR');
+      console.error({ error });
     }
-    await new Promise((resolve) => setTimeout(resolve, 1700));
   };
 
   const stopStream = () => {
-    if (recorder?.stream.id) recorder.stream.stop();
+    if (recorder?.stream.id && recorder.stopRecording) recorder.stream.stop();
   };
 
   const close = () => {
@@ -57,37 +53,17 @@ export function useRecordWebcam(
       previewRef.current.removeAttribute('src');
       previewRef.current.load();
     }
-    setStatus(CAMERA_STATUS.CLOSED);
+    setStatus('CLOSED');
     stopStream();
   };
 
   const open = async () => {
     try {
-      setStatus(CAMERA_STATUS.INIT);
+      setStatus('INIT');
       await openCamera();
-      setStatus(CAMERA_STATUS.OPEN);
+      setStatus('OPEN');
     } catch (error) {
-      setStatus(CAMERA_STATUS.ERROR);
-      console.error({ error });
-    }
-  };
-
-  const stop = async () => {
-    try {
-      if (recorder?.stopRecording) {
-        await recorder.stopRecording();
-        const blob = await recorder.getBlob();
-        const preview = window.URL.createObjectURL(blob);
-        if (previewRef.current) {
-          previewRef.current.src = preview;
-        }
-        stopStream();
-        setStatus(CAMERA_STATUS.PREVIEW);
-        return;
-      }
-      throw new Error('Stop recording error!');
-    } catch (error) {
-      setStatus(CAMERA_STATUS.ERROR);
+      setStatus('ERROR');
       console.error({ error });
     }
   };
@@ -96,9 +72,9 @@ export function useRecordWebcam(
     try {
       if (recorder?.startRecording) {
         await recorder.startRecording();
-        setStatus(CAMERA_STATUS.RECORDING);
-        if (options?.recordingLength) {
-          const length = options.recordingLength * 1000;
+        setStatus('RECORDING');
+        if (recorderOptions?.recordingLength) {
+          const length = recorderOptions.recordingLength * 1000;
           await new Promise((resolve) => setTimeout(resolve, length));
           await stop();
           stopStream();
@@ -107,7 +83,27 @@ export function useRecordWebcam(
       }
       throw new Error('Recorder not initialized!');
     } catch (error) {
-      setStatus(CAMERA_STATUS.ERROR);
+      setStatus('ERROR');
+      console.error({ error });
+    }
+  };
+
+  const stop = async () => {
+    try {
+      if (recorder?.stopRecording && recorder?.getBlob) {
+        await recorder.stopRecording();
+        const blob = await recorder.getBlob();
+        const preview = window.URL.createObjectURL(blob);
+        if (previewRef.current) {
+          previewRef.current.src = preview;
+        }
+        stopStream();
+        setStatus('PREVIEW');
+        return;
+      }
+      throw new Error('Stop recording error!');
+    } catch (error) {
+      setStatus('ERROR');
       console.error({ error });
     }
   };
@@ -116,7 +112,7 @@ export function useRecordWebcam(
     try {
       await open();
     } catch (error) {
-      setStatus(CAMERA_STATUS.ERROR);
+      setStatus('ERROR');
       console.error({ error });
     }
   };
@@ -133,18 +129,22 @@ export function useRecordWebcam(
       }
       throw new Error('Error downloading file!');
     } catch (error) {
-      setStatus(CAMERA_STATUS.ERROR);
+      setStatus('ERROR');
       console.error({ error });
     }
   };
 
   const getRecording = async () => {
     try {
-      return await recorder?.getBlob();
+      if (recorder?.getBlob) {
+        const blob = await recorder.getBlob();
+        return blob;
+      }
+      return null;
     } catch (error) {
-      setStatus(CAMERA_STATUS.ERROR);
+      setStatus('ERROR');
       console.error({ error });
-      return;
+      return null;
     }
   };
 

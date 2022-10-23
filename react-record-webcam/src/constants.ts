@@ -1,31 +1,12 @@
-import { RecordWebcamOptions, RecorderOptions } from './types';
+import { RecordOptions } from './types';
 
-export const OPTIONS: RecordWebcamOptions = {
-  filename: String(new Date().getTime()),
-  recordingLength: 3,
-  fileType: 'mp4',
-  width: 1920,
-  height: 1080,
-  aspectRatio: 1.777777778,
-} as const;
-
-export const RECORDER_OPTIONS: RecorderOptions = {
+export const DEFAULT_OPTIONS: RecordOptions = {
   type: 'video',
-  mimeType: 'video/mp4',
-  disableLogs: true,
+  mimeType: 'video/webm',
+  aspectRatio: 1.7,
+  fileName: String(new Date().getTime()),
   width: 1280,
   height: 720,
-  aspectRatio: 1.77,
-  isNewSize: false,
-} as const;
-
-export const CAMERA_STATUS = {
-  INIT: 'INIT',
-  CLOSED: 'CLOSED',
-  OPEN: 'OPEN',
-  RECORDING: 'RECORDING',
-  PREVIEW: 'PREVIEW',
-  ERROR: 'ERROR',
 } as const;
 
 export const BUTTON_LABELS = {

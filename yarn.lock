@@ -903,6 +903,11 @@
     "@types/prop-types" "*"
     csstype "^3.0.2"
 
+"@types/recordrtc@^5.6.9":
+  version "5.6.9"
+  resolved "https://registry.yarnpkg.com/@types/recordrtc/-/recordrtc-5.6.9.tgz#e0f2af4ae86e1a2aa3513d0d562fdf4d89d88913"
+  integrity sha512-s12VgTcFH/BeB+b5kAot4rJM31+XOt6N1A3F4LHTuw/+CyDb20O/1XIjwnghxtyb/+VVQuTJGE+Tff/z9xl0pQ==
+
 "@types/tough-cookie@*":
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/@types/tough-cookie/-/tough-cookie-4.0.0.tgz#fef1904e4668b6e5ecee60c52cc6a078ffa6697d"
