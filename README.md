@@ -167,3 +167,8 @@ You can use the below default class names or pass your own namespace to replace 
 |`react-record-webcam__video`
 |`react-record-webcam__controls`
 |`react-record-webcam__controls-button`
+
+
+## License
+
+[MIT](LICENSE)

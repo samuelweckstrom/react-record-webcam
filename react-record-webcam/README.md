@@ -13,14 +13,16 @@ Webcam recording hook and component for React. Works in all latest browser versi
 <br>
 
 ## Add package
+
 ```
 npm i react-record-webcam
 ```
+
 <i>Or</i>
+
 ```
 yarn add react-record-webcam
 ```
-
 
 ## Use hook
 
@@ -50,6 +52,7 @@ function RecordVideo(props) {
   )
 }
 ```
+
 Import the hook and initialize it in your function. The hook returns refs for both preview and recording video elements, functions to control recording (open, start, stop, retake, download) and camera status.
 
 ```
@@ -59,12 +62,12 @@ import { useRecordWebcam, CAMERA_STATUS } from 'react-record-webcam'
 You can also import the `CAMERA_STATUS` constant to check for different states and toggle your UI accordingly. Check the CodeSandbox [demo](https://codesandbox.io/s/react-record-webcam-demo-zog8c?file=/src/App.tsx) for a more thorough example on how to do this.
 
 Passing options:
+
 ```
 const OPTIONS = { ... }
 
 const recordWebcam = useRecordWebcam(OPTIONS);
 ```
-
 
 | Options  ||
 | ------------- | ------------- |
@@ -77,9 +80,7 @@ const recordWebcam = useRecordWebcam(OPTIONS);
 |`height: number`| Video height|
 |`disableLogs: boolean`|Disable status logs from console|
 
-
 <br>
-
 
 ## Use component
 
@@ -94,6 +95,7 @@ function RecordVideo(props) {
   )
 }
 ```
+
 You can include the component as is and it will render controls, video and preview elements. Alternatively you can use the render prop for more control:
 
 ```
@@ -119,9 +121,6 @@ function RecordVideo(props) {
   )
 }
 ```
-
-
-
 
 <br>
 
@@ -158,7 +157,7 @@ function RecordVideo(props) {
 
 <br>
 
-You can use the below default class names or pass your own namespace to replace the default `react-record-webcam`. 
+You can use the below default class names or pass your own namespace to replace the default `react-record-webcam`.
 
 | className |
 | ------------- |
@@ -167,3 +166,7 @@ You can use the below default class names or pass your own namespace to replace 
 |`react-record-webcam__video`
 |`react-record-webcam__controls`
 |`react-record-webcam__controls-button`
+
+## License
+
+[MIT](LICENSE)
