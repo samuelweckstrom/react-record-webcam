@@ -11,7 +11,7 @@ export type UseRecordWebcam = {
   webcamRef: React.RefObject<HTMLVideoElement>;
   close: () => void;
   download: () => void;
-  getRecording: () => void;
+  getRecording: () => Promise<Blob | null>;
   open: () => void;
   retake: () => void;
   start: () => void;
@@ -137,17 +137,16 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
     }
   };
 
-  const getRecording = async () => {
+  const getRecording = (): Promise<Blob | null> => {
     try {
       if (recorder?.getBlob) {
-        const blob = await recorder.getBlob();
-        return blob;
+        return recorder.getBlob();
       }
-      return null;
+      return Promise.resolve(null);
     } catch (error) {
       setStatus('ERROR');
       console.error({ error });
-      return null;
+      return Promise.reject(error);
     }
   };
 
