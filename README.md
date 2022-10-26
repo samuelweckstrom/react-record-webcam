@@ -142,7 +142,7 @@ function RecordVideo(props) {
 || `status<string>`|
 || `closeCamera<fn:void>`|
 || `download<fn:void>`|
-|| `getRecording<fn:void>`|
+|| `getRecording<fn:Promise<Blob \| null>>`|
 || `openCamera<fn:void>`|
 || `retake<fn:void>`|
 || `start<fn:void>`|

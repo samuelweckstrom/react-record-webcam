@@ -187,13 +187,13 @@ export class RecordWebcam extends React.PureComponent<
   async getRecording(): Promise<Blob | null> {
     try {
       if (this.recorder?.getBlob) {
-        const blob = await this.recorder.getBlob();
-        return blob;
+        return this.recorder.getBlob();
       }
-      return null;
+      return Promise.resolve(null);
     } catch (error) {
       this.handleError(error);
-      return null;
+      console.error({ error });
+      return Promise.reject(error);
     }
   }
 
