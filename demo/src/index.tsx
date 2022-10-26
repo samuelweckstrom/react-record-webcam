@@ -15,7 +15,7 @@ function App() {
   const recordWebcam = useRecordWebcam(OPTIONS);
 
   const getRecordingFile = async () => {
-    const blob = recordWebcam.getRecording();
+    const blob = await recordWebcam.getRecording();
     console.log({ blob });
   };
 
