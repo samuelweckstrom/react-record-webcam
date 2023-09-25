@@ -40,6 +40,10 @@ export type UseRecordWebcam = {
 export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
   const webcamRef = React.useRef<HTMLVideoElement>(null);
   const previewRef = React.useRef<HTMLVideoElement>(null);
+  const trackRef = React.useRef<{ tracks: MediaStreamTrack[] | null }>({
+    tracks: null,
+  });
+
   const [webcamStatus, setWebcamStatus] =
     React.useState<WebcamStatus>('CLOSED');
   const [recorder, setRecorder] = React.useState<Recorder | null>(null);
@@ -142,7 +146,6 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
         const blob = await recorder.getBlob();
         const fileTypeFromMimeType =
           recorderOptions.mimeType?.split('video/')[1]?.split(';')[0] || 'mp4';
-        console.log({ fileTypeFromMimeType, recorderOptions });
         const fileType =
           fileTypeFromMimeType === 'x-matroska' ? 'mkv' : fileTypeFromMimeType;
         const filename = `${recorderOptions.fileName}.${fileType}`;
@@ -168,6 +171,25 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
       throw error;
     }
   };
+
+  React.useEffect(() => {
+    if (webcamRef.current && webcamStatus === 'OPEN') {
+      const stream = webcamRef.current.srcObject as any;
+      const tracks = stream?.getTracks();
+      trackRef.current.tracks = tracks;
+    }
+  }, [webcamRef, webcamStatus]);
+
+  React.useEffect(() => {
+    return () => {
+      if (trackRef.current?.tracks) {
+        trackRef.current.tracks.forEach((track) => {
+          track.stop();
+        });
+      }
+      close();
+    };
+  }, []);
 
   return {
     close,
