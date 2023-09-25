@@ -1,16 +1,23 @@
 {
   "compilerOptions": {
-    "plugins": [
-      {
-        "name": "typescript-plugin-css-modules"
-      }
-    ],
+    "allowJs": true,
     "alwaysStrict": true,
     "declaration": true,
     "esModuleInterop": true,
+    "inlineSourceMap": true,
     "jsx": "react",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "lib": [
+      "es5",
+      "es2015",
+      "es2016",
+      "es2017",
+      "es2018",
+      "es2019",
+      "es2020",
+      "DOM"
+    ],
+    "module": "ES2022",
+    "moduleResolution": "classic",
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
@@ -19,23 +26,18 @@
     "noUnusedParameters": false,
     "outDir": "./dist",
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "strictPropertyInitialization": true,
-    "target": "es3",
-    "lib": [
-      "es2015",
-      "dom"
-    ]
+    "target": "es2015"
   },
-  "include": [
-    "./src/**/*"
-  ],
   "exclude": [
-    "node_modules",
-    "dist",
-    "src/__tests__"
+    "./src/__tests__",
+    "node_modules"
+  ],
+  "include": [
+    "./src/*"
   ]
 }

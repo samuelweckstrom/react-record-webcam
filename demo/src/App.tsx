@@ -1,5 +1,4 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
 import { RecordWebcam, useRecordWebcam } from 'react-record-webcam';
 import './styles.css';
 
@@ -11,15 +10,11 @@ const OPTIONS = {
   disableLogs: true,
 } as const;
 
-function App() {
+export function App() {
   const recordWebcam = useRecordWebcam(OPTIONS);
 
   const getRecordingFile = async () => {
     const blob = await recordWebcam.getRecording();
-    console.log({ blob });
-  };
-
-  const getBlob = async (blob: Blob | null) => {
     console.log({ blob });
   };
 
@@ -107,75 +102,6 @@ function App() {
         <h1>Component demo</h1>
         <RecordWebcam options={OPTIONS} />
       </div>
-      <div className="demo-section">
-        <RecordWebcam
-          options={OPTIONS}
-          render={(renderProps) => (
-            <div>
-              <h1>Component render prop demo</h1>
-              <p>Camera status: {renderProps.status}</p>
-              <div>
-                <button
-                  disabled={
-                    renderProps.status === 'OPEN' ||
-                    renderProps.status === 'RECORDING' ||
-                    renderProps.status === 'PREVIEW'
-                  }
-                  onClick={renderProps.openCamera}
-                >
-                  Open camera
-                </button>
-                <button
-                  disabled={renderProps.status === 'CLOSED'}
-                  onClick={renderProps.closeCamera}
-                >
-                  Close camera
-                </button>
-
-                <button
-                  disabled={
-                    renderProps.status === 'CLOSED' ||
-                    renderProps.status === 'RECORDING' ||
-                    renderProps.status === 'PREVIEW'
-                  }
-                  onClick={renderProps.start}
-                >
-                  Start recording
-                </button>
-                <button
-                  disabled={renderProps.status !== 'RECORDING'}
-                  onClick={renderProps.stop}
-                >
-                  Stop recording
-                </button>
-                <button
-                  disabled={renderProps.status !== 'PREVIEW'}
-                  onClick={renderProps.retake}
-                >
-                  Retake
-                </button>
-                <button
-                  disabled={renderProps.status !== 'PREVIEW'}
-                  onClick={renderProps.download}
-                >
-                  Download
-                </button>
-                <button
-                  disabled={renderProps.status !== 'PREVIEW'}
-                  onClick={async () => {
-                    const blob = await renderProps.getRecording();
-                    getBlob(blob);
-                  }}
-                >
-                  Get blob
-                </button>
-              </div>
-            </div>
-          )}
-        />
-      </div>
     </div>
   );
 }
-
-ReactDOM.render(<App />, document.getElementById('root'));

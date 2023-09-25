@@ -1,3 +1,3 @@
-export * from './component';
-export * from './hook';
+export * from './component/index';
+export * from './hook/index';
 export * from './types';

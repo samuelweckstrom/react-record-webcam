@@ -13,8 +13,8 @@
     "recordrtc": "5.6.2"
   },
   "peerDependencies": {
-    "react": "^16.3",
-    "react-dom": "^16.3"
+    "react": "^17.3",
+    "react-dom": "^17.3"
   },
   "scripts": {
     "start": "rm -rf ./dist && tsc --watch",
@@ -30,6 +30,6 @@
     "video"
   ],
   "devDependencies": {
-    "@types/recordrtc": "^5.6.9"
+    "@types/recordrtc": "^5.6.11"
   }
 }
