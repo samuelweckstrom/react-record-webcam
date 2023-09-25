@@ -5,16 +5,8 @@
     "react-record-webcam"
   ],
   "scripts": {
-    "start:project": "yarn workspace react-record-webcam start",
-    "build:project": "yarn workspace react-record-webcam build",
-    "start:demo": "yarn workspace demo start"
-  },
-  "devDependencies": {
-    "@types/jsdom": "^16.2.5",
-    "@types/react": "^16.9.55",
-    "@types/react-dom": "^16.9.9",
-    "parcel-bundler": "^1.12.3",
-    "ts-loader": "^8.0.7",
-    "typescript": "^4.0.5"
+    "demo": "npm run dev -w demo",
+    "demo-build": "npm run build -w demo",
+    "package": "npm run start -w react-record-webcam"
   }
 }
