@@ -1,5 +1,5 @@
 import { RecordRTCPromisesHandler } from 'recordrtc';
-import type { RecordOptions } from './types';
+import type { RecordOptions } from 'react-record-webcam';
 
 export type Recorder = {
   stream: MediaStream & MediaStreamTrack;
