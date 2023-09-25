@@ -1,7 +1,7 @@
 html,
 body {
   font-size: 16px;
-  font-family: Arial, Helvetica, sans-serif;  
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 .demo-section {
@@ -9,11 +9,7 @@ body {
   border-bottom: 2px solid;
 }
 
-.demo-section:last-child {
-  border: none;
-}
-
 video {
-  width: 90%;  
+  width: 90%;
   height: auto;
 }

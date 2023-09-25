@@ -1,28 +1,47 @@
 import React from 'react';
-import { mediaRecorder } from '../mediaRecorder';
-import { saveFile } from '../utils';
-import { DEFAULT_OPTIONS } from '../constants';
-import type { Recorder } from '../mediaRecorder';
-import type { RecordOptions, WebcamStatus } from '../types';
+import { mediaRecorder } from './mediaRecorder';
+import type { Recorder } from './mediaRecorder';
+import type { RecordOptions, WebcamStatus } from 'react-record-webcam';
+
+function saveFile(filename: string, blob: Blob) {
+  const elem = window.document.createElement('a');
+  elem.style.display = 'none';
+  elem.href = window.URL.createObjectURL(blob);
+  elem.download = filename;
+  document.body.appendChild(elem);
+  elem.click();
+  document.body.removeChild(elem);
+}
+
+export const DEFAULT_OPTIONS: RecordOptions = {
+  aspectRatio: 1.7,
+  disableLogs: true,
+  fileName: String(new Date().getTime()),
+  height: 720,
+  mimeType: 'video/webm',
+  type: 'video',
+  width: 1280,
+} as const;
 
 export type UseRecordWebcam = {
-  previewRef: React.RefObject<HTMLVideoElement>;
-  status: WebcamStatus;
-  webcamRef: React.RefObject<HTMLVideoElement>;
   close: () => void;
   download: () => void;
-  getRecording: () => Promise<Blob | null>;
+  getRecording: () => Promise<Blob | unknown>;
   open: () => void;
+  previewRef: React.RefObject<HTMLVideoElement>;
   retake: () => void;
   start: () => void;
   stop: () => void;
   stopStream: () => void;
+  webcamRef: React.RefObject<HTMLVideoElement>;
+  webcamStatus: WebcamStatus;
 };
 
 export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
   const webcamRef = React.useRef<HTMLVideoElement>(null);
   const previewRef = React.useRef<HTMLVideoElement>(null);
-  const [status, setStatus] = React.useState<WebcamStatus>('CLOSED');
+  const [webcamStatus, setWebcamStatus] =
+    React.useState<WebcamStatus>('CLOSED');
   const [recorder, setRecorder] = React.useState<Recorder | null>(null);
 
   const recorderOptions: RecordOptions = {
@@ -39,7 +58,7 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
       }
       await new Promise((resolve) => setTimeout(resolve, 1700));
     } catch (error) {
-      setStatus('ERROR');
+      setWebcamStatus('ERROR');
       console.error({ error });
     }
   };
@@ -53,17 +72,17 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
       previewRef.current.removeAttribute('src');
       previewRef.current.load();
     }
-    setStatus('CLOSED');
+    setWebcamStatus('CLOSED');
     stopStream();
   };
 
   const open = async () => {
     try {
-      setStatus('INIT');
+      setWebcamStatus('INIT');
       await openCamera();
-      setStatus('OPEN');
+      setWebcamStatus('OPEN');
     } catch (error) {
-      setStatus('ERROR');
+      setWebcamStatus('ERROR');
       console.error({ error });
     }
   };
@@ -72,7 +91,7 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
     try {
       if (recorder?.startRecording) {
         await recorder.startRecording();
-        setStatus('RECORDING');
+        setWebcamStatus('RECORDING');
         if (recorderOptions?.recordingLength) {
           const length = recorderOptions.recordingLength * 1000;
           await new Promise((resolve) => setTimeout(resolve, length));
@@ -83,7 +102,7 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
       }
       throw new Error('Recorder not initialized!');
     } catch (error) {
-      setStatus('ERROR');
+      setWebcamStatus('ERROR');
       console.error({ error });
     }
   };
@@ -98,12 +117,12 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
           previewRef.current.src = preview;
         }
         stopStream();
-        setStatus('PREVIEW');
+        setWebcamStatus('PREVIEW');
         return;
       }
       throw new Error('Stop recording error!');
     } catch (error) {
-      setStatus('ERROR');
+      setWebcamStatus('ERROR');
       console.error({ error });
     }
   };
@@ -112,7 +131,7 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
     try {
       await open();
     } catch (error) {
-      setStatus('ERROR');
+      setWebcamStatus('ERROR');
       console.error({ error });
     }
   };
@@ -132,35 +151,35 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
       }
       throw new Error('Error downloading file!');
     } catch (error) {
-      setStatus('ERROR');
+      setWebcamStatus('ERROR');
       console.error({ error });
     }
   };
-
-  const getRecording = (): Promise<Blob | null> => {
+  const getRecording = async (): Promise<Blob | unknown> => {
     try {
       if (recorder?.getBlob) {
-        return recorder.getBlob();
+        const blob = await recorder?.getBlob();
+        return blob;
       }
       return Promise.resolve(null);
     } catch (error) {
-      setStatus('ERROR');
+      setWebcamStatus('ERROR');
       console.error({ error });
-      return Promise.reject(error);
+      throw error;
     }
   };
 
   return {
     close,
     download,
+    getRecording,
     open,
     previewRef,
     retake,
-    getRecording,
     start,
-    status,
     stop,
     stopStream,
     webcamRef,
+    webcamStatus,
   };
 }
