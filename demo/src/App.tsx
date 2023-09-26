@@ -27,53 +27,51 @@ export function App() {
             disabled={
               recordWebcam.webcamStatus === 'OPEN' ||
               recordWebcam.webcamStatus === 'RECORDING' ||
-              recordWebcam.webcamStatus === 'PREVIEW'
+              recordWebcam.webcamStatus === 'RECORDED'
             }
             onClick={recordWebcam.open}
           >
             Open camera
           </button>
-          <button
-            disabled={recordWebcam.webcamStatus === 'CLOSED'}
-            onClick={recordWebcam.close}
-          >
-            Close camera
-          </button>
-          <button
-            disabled={
-              recordWebcam.webcamStatus === 'CLOSED' ||
-              recordWebcam.webcamStatus === 'RECORDING' ||
-              recordWebcam.webcamStatus === 'PREVIEW'
-            }
-            onClick={recordWebcam.start}
-          >
-            Start recording
-          </button>
-          <button
-            disabled={recordWebcam.webcamStatus !== 'RECORDING'}
-            onClick={recordWebcam.stop}
-          >
-            Stop recording
-          </button>
-          <button
-            disabled={recordWebcam.webcamStatus !== 'PREVIEW'}
-            onClick={recordWebcam.retake}
-          >
-            Retake
-          </button>
-          <button
-            disabled={recordWebcam.webcamStatus !== 'PREVIEW'}
-            onClick={recordWebcam.download}
-          >
-            Download
-          </button>
-          <button
-            disabled={recordWebcam.webcamStatus !== 'PREVIEW'}
-            onClick={getRecordingFile}
-          >
-            Get recording
-          </button>
+          {!(
+            recordWebcam.webcamStatus === 'NO_CAMERA' ||
+            recordWebcam.webcamStatus === 'ERROR' ||
+            recordWebcam.webcamStatus === 'CLOSED'
+          ) && (
+            <>
+              <button
+                disabled={recordWebcam.webcamStatus === 'CLOSED'}
+                onClick={recordWebcam.close}
+              >
+                Close camera
+              </button>
+              <button
+                disabled={
+                  recordWebcam.webcamStatus === 'CLOSED' ||
+                  recordWebcam.webcamStatus === 'RECORDING' ||
+                  recordWebcam.webcamStatus === 'RECORDED'
+                }
+                onClick={recordWebcam.start}
+              >
+                Start recording
+              </button>
+              <button
+                disabled={recordWebcam.webcamStatus !== 'RECORDING'}
+                onClick={recordWebcam.stop}
+              >
+                Stop recording
+              </button>
+              {recordWebcam.webcamStatus === 'RECORDED' && (
+                <>
+                  <button onClick={recordWebcam.retake}>Retake</button>
+                  <button onClick={recordWebcam.download}>Download</button>
+                  <button onClick={getRecordingFile}>Get recording</button>
+                </>
+              )}
+            </>
+          )}
         </div>
+
         <video
           ref={recordWebcam.webcamRef}
           style={{
@@ -91,7 +89,7 @@ export function App() {
           ref={recordWebcam.previewRef}
           style={{
             display: `${
-              recordWebcam.webcamStatus === 'PREVIEW' ? 'block' : 'none'
+              recordWebcam.webcamStatus === 'RECORDED' ? 'block' : 'none'
             }`,
           }}
           autoPlay
