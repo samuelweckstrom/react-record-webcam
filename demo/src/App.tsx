@@ -21,6 +21,9 @@ export function App() {
     <div>
       <div className="demo-section">
         <h1>Demo</h1>
+        <button onClick={recordWebcam.muteAudio}>
+          {recordWebcam.isMuted ? 'Unmute' : 'Mute'}
+        </button>
         <p>Camera webcamStatus: {recordWebcam.webcamStatus}</p>
         <div>
           <button
