@@ -14,6 +14,7 @@ declare module 'react-record-webcam' {
   export type WebcamStatus =
     | 'INIT'
     | 'CLOSED'
+    | 'NO_CAMERA'
     | 'OPEN'
     | 'RECORDING'
     | 'PREVIEW'
