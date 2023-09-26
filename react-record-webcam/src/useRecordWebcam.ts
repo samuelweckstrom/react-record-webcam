@@ -27,7 +27,8 @@ export type UseRecordWebcam = {
   close: () => void;
   download: () => void;
   getRecording: () => Promise<Blob | unknown>;
-  open: () => void;
+  isMuted: boolean;
+  open: () => Promise<void>;
   previewRef: React.RefObject<HTMLVideoElement>;
   retake: () => void;
   start: () => void;
@@ -35,6 +36,7 @@ export type UseRecordWebcam = {
   stopStream: () => void;
   webcamRef: React.RefObject<HTMLVideoElement>;
   webcamStatus: WebcamStatus;
+  muteAudio: () => void;
 };
 
 export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
@@ -46,6 +48,9 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
 
   const [webcamStatus, setWebcamStatus] =
     React.useState<WebcamStatus>('CLOSED');
+
+  const [isMuted, setIsMuted] = React.useState(false);
+
   const [recorder, setRecorder] = React.useState<Recorder | null>(null);
 
   const recorderOptions: RecordOptions = {
@@ -150,6 +155,20 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
       console.error({ error });
     }
   };
+
+  const muteAudio = () => {
+    if (!isMuted) {
+      recorder?.stream.getAudioTracks().forEach((track) => {
+        track.enabled = false;
+      });
+    } else {
+      recorder?.stream.getAudioTracks().forEach((track) => {
+        track.enabled = true;
+      });
+    }
+    setIsMuted(!isMuted);
+  };
+
   const getRecording = async (): Promise<Blob | unknown> => {
     try {
       if (recorder?.getBlob) {
@@ -188,6 +207,7 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
     download,
     getRecording,
     open,
+    isMuted,
     previewRef,
     retake,
     start,
@@ -195,5 +215,6 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
     stopStream,
     webcamRef,
     webcamStatus,
+    muteAudio,
   };
 }
