@@ -53,38 +53,30 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
     ...options,
   };
 
-  const openCamera = async () => {
-    try {
-      const recorderInit = await mediaRecorder(recorderOptions);
-      setRecorder(recorderInit);
-      if (webcamRef?.current) {
-        webcamRef.current.srcObject = recorderInit.stream;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 1700));
-    } catch (error) {
-      setWebcamStatus('ERROR');
-      console.error({ error });
-    }
-  };
-
   const stopStream = () => {
     if (recorder?.stream.id && recorder.stopRecording) recorder.stream.stop();
   };
 
-  const close = () => {
+  const close = async (): Promise<void> => {
     if (previewRef?.current) {
       previewRef.current.removeAttribute('src');
       previewRef.current.load();
     }
     setWebcamStatus('CLOSED');
     stopStream();
+    await new Promise((resolve) => setTimeout(resolve, 0));
   };
 
-  const open = async () => {
+  const open = async (): Promise<void> => {
     try {
       setWebcamStatus('INIT');
-      await openCamera();
+      const recorderInit = await mediaRecorder(recorderOptions);
+      setRecorder(recorderInit);
+      if (webcamRef?.current) {
+        webcamRef.current.srcObject = recorderInit.stream;
+      }
       setWebcamStatus('OPEN');
+      await new Promise((resolve) => setTimeout(resolve, 0));
     } catch (error) {
       setWebcamStatus('ERROR');
       console.error({ error });
@@ -106,7 +98,7 @@ export function useRecordWebcam(options?: RecordOptions): UseRecordWebcam {
       }
       throw new Error('Recorder not initialized!');
     } catch (error) {
-      setWebcamStatus('ERROR');
+      setWebcamStatus('NO_CAMERA');
       console.error({ error });
     }
   };
