@@ -1,6 +1,6 @@
 {
   "name": "react-record-webcam",
-  "description": "A React webcam recording hook and component 🎬📹",
+  "description": "Webcam recorder for React 🎬📹",
   "version": "0.0.18",
   "main": "dist/index.js",
   "files": [
@@ -9,12 +9,9 @@
   "repository": "git@github.com:samuelweckstrom/react-record-webcam.git",
   "author": "Samuel Weckström",
   "license": "MIT",
-  "dependencies": {
-    "recordrtc": "5.6.2"
-  },
   "peerDependencies": {
-    "react": "^17.3",
-    "react-dom": "^17.3"
+    "react": "^16.3",
+    "react-dom": "^16.3"
   },
   "scripts": {
     "start": "rm -rf ./dist && tsc --watch",
