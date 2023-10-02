@@ -10,6 +10,85 @@ body {
 }
 
 video {
-  width: 90%;
+  width: 100%;
   height: auto;
+  max-height: 50vh;
+}
+
+h4 {
+  margin: 5px 0;
+}
+
+small {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+button.selected {
+  background-color: #F00;
+  color: #fff;
+}
+
+.devices {
+  display: flex;
+  margin: 10px 0;
+}
+
+.devices> :nth-child(n + 2) {
+  margin: 0 10px;
+
+}
+
+.device {
+  display: flex;
+  flex-direction: column;
+  width: auto;
+}
+
+.device-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.controls {
+  margin: 5px 0;
+}
+
+.controls> :nth-child(n + 2) {
+  margin-left: 5px;
+}
+
+.controls button {
+  width: auto;
+  height: 20px;
+}
+
+
+
+.input {
+  display: flex;
+}
+
+.input div {
+  margin-right: 20px;
+  justify-content: flex-end;
+  align-items: flex-end;
+  height: auto;
+}
+
+.input-start {
+  margin-top: 10px;
+}
+
+.input-select {
+  display: flex;
+  flex-direction: row;
+}
+
+.input-select> :nth-child(n + 2) {
+  margin-left: 10px;
+}
+
+.input-select--selected {
+  background-color: hotpink;
 }
