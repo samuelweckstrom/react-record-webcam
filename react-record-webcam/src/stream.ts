@@ -1,8 +1,8 @@
-export const startStream = async (
+export async function startStream(
   videoId: string,
   audioId: string,
   constraints: MediaTrackConstraints
-): Promise<MediaStream> => {
+): Promise<MediaStream> {
   const newStream = await navigator.mediaDevices.getUserMedia({
     video: { deviceId: { exact: videoId } },
     audio: {
@@ -12,4 +12,4 @@ export const startStream = async (
   const tracks = newStream.getTracks();
   tracks.forEach((track) => track.applyConstraints(constraints));
   return newStream;
-};
+}

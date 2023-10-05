@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
-import { handleError } from './utils';
+import { useEffect, useState } from 'react';
+import { useRecording } from './useRecording';
 
-export type ByIdDevice = {
+type ByIdDevice = {
   label: string;
-  type: string;
+  type: 'videoinput' | 'audioinput';
 };
 
-export type ById = Record<string, ByIdDevice>;
+type ById = Record<string, ByIdDevice>;
 
-export const byId = async (devices: MediaDeviceInfo[]): Promise<ById> => {
+async function byId(devices: MediaDeviceInfo[]): Promise<ById> {
   return devices.reduce<ById>(
     (result, { deviceId, kind, label }: MediaDeviceInfo) => {
       if (kind === 'videoinput' || kind === 'audioinput') {
@@ -21,19 +21,19 @@ export const byId = async (devices: MediaDeviceInfo[]): Promise<ById> => {
     },
     {}
   );
-};
+}
 
-export type ByLabelDevice = {
+type ByLabelDevice = {
   label: string;
   deviceId: string;
 };
 
-export type ByType = {
+type ByType = {
   video: ByLabelDevice[];
   audio: ByLabelDevice[];
 };
 
-export const byType = async (devices: MediaDeviceInfo[]): Promise<ByType> => {
+async function byType(devices: MediaDeviceInfo[]): Promise<ByType> {
   return devices.reduce<ByType>(
     (result, { deviceId, kind, label }: MediaDeviceInfo) => {
       if (kind === 'videoinput') {
@@ -49,9 +49,9 @@ export const byType = async (devices: MediaDeviceInfo[]): Promise<ByType> => {
       audio: [],
     }
   );
-};
+}
 
-export const getUserPermission = async (): Promise<MediaDeviceInfo[]> => {
+async function getUserPermission(): Promise<MediaDeviceInfo[]> {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
@@ -63,14 +63,35 @@ export const getUserPermission = async (): Promise<MediaDeviceInfo[]> => {
     });
     return mediaDevices;
   } catch (error) {
-    console.error('@getUserPermission: ', { error });
-    throw error;
+    throw new Error('getUserPermission');
   }
+}
+
+type InitialDevice = {
+  deviceId: string;
+  label: string;
 };
 
-export const useDeviceInitialization = () => {
-  const [devicesByType, setDevicesByType] = useState<ByType>();
+type InitialDevices = {
+  video: InitialDevice | null;
+  audio: InitialDevice | null;
+};
+
+export function useDeviceInitialization(): {
+  devicesByType: ByType;
+  devicesById: ById;
+  initialDevices: InitialDevices;
+} {
+  const { handleError } = useRecording();
+  const [devicesByType, setDevicesByType] = useState<ByType>({
+    video: [],
+    audio: [],
+  });
   const [devicesById, setDevicesById] = useState<ById>({});
+  const [initialDevices, setInitialDevices] = useState<InitialDevices>({
+    video: null,
+    audio: null,
+  });
 
   useEffect(() => {
     const initializeDevices = async () => {
@@ -82,6 +103,16 @@ export const useDeviceInitialization = () => {
         ]);
         setDevicesById(allById);
         setDevicesByType(allByType);
+        setInitialDevices({
+          video: {
+            deviceId: allByType.video[0].deviceId,
+            label: allByType.video[0].label,
+          },
+          audio: {
+            deviceId: allByType.audio[0].deviceId,
+            label: allByType.audio[0].deviceId,
+          },
+        });
       } catch (error) {
         handleError('initializeDevices', error);
       }
@@ -90,37 +121,5 @@ export const useDeviceInitialization = () => {
     initializeDevices();
   }, []);
 
-  return { devicesByType, devicesById };
-};
-
-type SelectedDevice = {
-  videoId: string | null;
-  audioId: string | null;
-};
-
-export const useDeviceSelection = (devicesById: ById) => {
-  const [selectedDevices, setSelectedDevices] = useState<SelectedDevice>({
-    videoId: null,
-    audioId: null,
-  });
-
-  const setInput = useCallback(
-    (deviceId: string) => {
-      try {
-        const devices = { ...selectedDevices };
-        if (devicesById?.[deviceId].type === 'videoinput') {
-          devices.videoId = deviceId;
-        }
-        if (devicesById?.[deviceId].type === 'audioinput') {
-          devices.audioId = deviceId;
-        }
-        setSelectedDevices(devices);
-      } catch (error) {
-        handleError('setInput', error);
-      }
-    },
-    [devicesById, selectedDevices]
-  );
-
-  return { selectedDevices, setInput };
-};
+  return { devicesByType, devicesById, initialDevices };
+}
