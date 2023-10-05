@@ -6,6 +6,7 @@
   "files": [
     "dist"
   ],
+  "types": "dist/index.d.ts",
   "repository": "git@github.com:samuelweckstrom/react-record-webcam.git",
   "author": "Samuel Weckström",
   "license": "MIT",
