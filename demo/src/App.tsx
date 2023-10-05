@@ -7,21 +7,50 @@ export function App() {
     activeRecordings,
     cancelRecording,
     clearPreview,
+    closeCamera,
+    createRecording,
     devicesByType,
+    devicesById,
     download,
     muteRecording,
     openCamera,
     pauseRecording,
     resumeRecording,
-    setInput,
     startRecording,
     stopRecording,
   } = useRecordWebcam();
 
+  const [videoDeviceId, setVideoDeviceId] = React.useState<string>('');
+  const [audioDeviceId, setAudioDeviceId] = React.useState<string>('');
+
   const handleSelect = async (event: any) => {
     const { deviceid: deviceId } =
       event.target.options[event.target.selectedIndex].dataset;
-    setInput(deviceId);
+    if (devicesById[deviceId].type === 'videoinput') {
+      setVideoDeviceId(deviceId);
+    }
+    if (devicesById[deviceId].type === 'audioinput') {
+      setAudioDeviceId(deviceId);
+    }
+  };
+
+  const simpleDemo = async () => {
+    try {
+      const recording = await createRecording(videoDeviceId, audioDeviceId);
+      if (!recording) return;
+      await openCamera(recording.id);
+      await startRecording(recording.id);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await stopRecording(recording.id);
+      await closeCamera(recording.id);
+    } catch (error) {
+      console.log({ error });
+    }
+  };
+
+  const start = async () => {
+    const recording = await createRecording(videoDeviceId, audioDeviceId);
+    if (recording) await openCamera(recording.id);
   };
 
   return (
@@ -49,10 +78,11 @@ export function App() {
         </div>
       </div>
       <div className="input-start">
-        <button onClick={openCamera}>Open camera</button>
+        <button onClick={simpleDemo}>Record 3s video</button>
+        <button onClick={start}>Open camera</button>
       </div>
       <div className="devices">
-        {activeRecordings?.map((recording) => (
+        {activeRecordings?.map((recording: Recording) => (
           <div className="device" key={recording.id}>
             <p>Live</p>
             <div className="device-list">
@@ -60,7 +90,7 @@ export function App() {
               <small>Video: {recording.videoLabel}</small>
               <small>Audio: {recording.audioLabel}</small>
             </div>
-            <video ref={recording.webcamRef} loop autoPlay />
+            <video ref={recording.webcamRef} loop autoPlay playsInline />
             <div className="controls">
               <button
                 disabled={
@@ -97,16 +127,16 @@ export function App() {
                 Stop
               </button>
               <button onClick={() => cancelRecording(recording.id)}>
-                Cancel recording
+                Cancel
               </button>
             </div>
             <div className="preview">
               <p>Preview</p>
-              <video ref={recording.previewRef} autoPlay loop />
+              <video ref={recording.previewRef} autoPlay loop playsInline />
               <div className="controls">
                 <button onClick={() => download(recording.id)}>Download</button>
                 <button onClick={() => clearPreview(recording.id)}>
-                  Clear
+                  Clear preview
                 </button>
               </div>
             </div>

@@ -80,6 +80,10 @@ button.selected {
   margin-top: 10px;
 }
 
+.input-start> :nth-child(n + 2) {
+  margin-left: 10px;
+}
+
 .input-select {
   display: flex;
   flex-direction: row;
