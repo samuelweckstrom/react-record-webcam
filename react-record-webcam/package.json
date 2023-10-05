@@ -1,6 +1,6 @@
 {
   "name": "react-record-webcam",
-  "description": "Webcam recorder for React 🎬📹",
+  "description": "Webcam recording tool for React",
   "version": "0.0.18",
   "main": "dist/index.js",
   "files": [
@@ -10,8 +10,7 @@
   "author": "Samuel Weckström",
   "license": "MIT",
   "peerDependencies": {
-    "react": "^16.3",
-    "react-dom": "^16.3"
+    "react": "^16.3"
   },
   "scripts": {
     "start": "rm -rf ./dist && tsc --watch",
@@ -20,13 +19,13 @@
   "keywords": [
     "react",
     "webcam",
+    "multi",
+    "concurrent",
+    "simultaneous",
     "record",
     "recording",
-    "component",
     "hook",
-    "video"
-  ],
-  "devDependencies": {
-    "@types/recordrtc": "^5.6.11"
-  }
+    "video",
+    "audio"
+  ]
 }
