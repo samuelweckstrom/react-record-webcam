@@ -311,8 +311,9 @@ export function useRecordWebcam(args?: UseRecordWebcam) {
   return {
     activeRecordings,
     applyConstraints,
-    clearPreview,
     cancelRecording,
+    clearAllRecordings,
+    clearPreview,
     closeCamera,
     createRecording,
     devicesById,
@@ -325,6 +326,5 @@ export function useRecordWebcam(args?: UseRecordWebcam) {
     resumeRecording,
     startRecording,
     stopRecording,
-    clearAllRecordings,
   };
 }
