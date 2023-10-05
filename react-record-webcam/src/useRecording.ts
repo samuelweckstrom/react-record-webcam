@@ -11,6 +11,8 @@ export enum STATUS {
   PAUSED = 'PAUSED',
 }
 
+export type Status = keyof typeof STATUS;
+
 export type Recording = {
   id: string;
   audioId: string;
@@ -21,7 +23,7 @@ export type Recording = {
   onDataAvailablePromise: Promise<void>;
   previewRef: React.RefObject<HTMLVideoElement>;
   recorder: MediaRecorder | null;
-  status: STATUS;
+  status: Status;
   videoId: string;
   videoLabel?: string;
   webcamRef: React.RefObject<HTMLVideoElement>;
