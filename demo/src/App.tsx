@@ -34,9 +34,9 @@ export function App() {
     }
   };
 
-  const simpleDemo = async () => {
+  const quickDemo = async () => {
     try {
-      const recording = await createRecording(videoDeviceId, audioDeviceId);
+      const recording = await createRecording();
       if (!recording) return;
       await openCamera(recording.id);
       await startRecording(recording.id);
@@ -78,7 +78,7 @@ export function App() {
         </div>
       </div>
       <div className="input-start">
-        <button onClick={simpleDemo}>Record 3s video</button>
+        <button onClick={quickDemo}>Record 3s video</button>
         <button onClick={start}>Open camera</button>
       </div>
       <div className="devices">
