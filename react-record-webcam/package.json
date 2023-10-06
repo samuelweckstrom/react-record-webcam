@@ -1,7 +1,7 @@
 {
   "name": "react-record-webcam",
   "description": "Webcam recording tool for React",
-  "version": "0.0.18",
+  "version": "1.0.0-rc.3",
   "main": "dist/index.js",
   "files": [
     "dist"
@@ -11,7 +11,7 @@
   "author": "Samuel Weckström",
   "license": "MIT",
   "peerDependencies": {
-    "react": "^16.3"
+    "react": "*"
   },
   "scripts": {
     "start": "rm -rf ./dist && tsc --watch",
