@@ -1,0 +1,25 @@
+name: Run tests
+
+on:
+  push:
+    branches:
+      - master  # assuming your primary branch is 'main'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout 🛎️
+      uses: actions/checkout@v2 # This is a pre-made GitHub Action for checking out the repo code
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: '14'  # You can specify your Node.js version here
+
+    - name: Install and Test 🔧
+      run: |
+        npm ci
+        npm test
+
