@@ -5,7 +5,7 @@
 <br>
 
 [![TypeScript](https://badges.frapsoft.com/typescript/code/typescript.svg?v=101)](https://github.com/ellerbrock/typescript-badges/)
-![Tests](https://github.com/github/docs/actions/workflows/main.yml/badge.svg)
+[![Tests](https://github.com/samuelweckstrom/react-record-webcam/actions/workflows/tests.yaml/badge.svg)](https://github.com/samuelweckstrom/react-record-webcam/actions/workflows/tests.yaml)
 [![npm version](https://badge.fury.io/js/react-record-webcam.svg)](https://www.npmjs.com/package/react-record-webcam)
 
 Promise based zero dependency webcam library for React. Select video and audio input for one or multiple concurrent recordings using any mix of video and audio source.
