@@ -4,7 +4,6 @@ import { useDeviceInitialization } from './devices';
 import { startStream } from './stream';
 import {
   DEFAULT_CONSTRAINTS,
-  DEFAULT_OPTIONS,
   DEFAULT_RECORDER_OPTIONS,
   ERROR_MESSAGES,
 } from './constants';
@@ -13,6 +12,7 @@ import type { Recording } from './useRecording';
 type Options = {
   fileName: string;
   fileType: string;
+  mimeType: string;
 };
 
 type UseRecordWebcam = {
@@ -21,7 +21,7 @@ type UseRecordWebcam = {
   options: Partial<Options>;
 };
 
-export function useRecordWebcam(args?: UseRecordWebcam) {
+export function useRecordWebcam(args?: Partial<UseRecordWebcam>) {
   const { devicesByType, devicesById, initialDevices } =
     useDeviceInitialization();
   const {
@@ -51,8 +51,6 @@ export function useRecordWebcam(args?: UseRecordWebcam) {
     }),
     [args]
   );
-
-  const options: Options = { ...DEFAULT_OPTIONS, ...args?.options };
 
   const createRecording = async (
     videoId?: string,
@@ -140,7 +138,7 @@ export function useRecordWebcam(args?: UseRecordWebcam) {
       recording.recorder.ondataavailable = async (event: BlobEvent) => {
         if (event.data.size) {
           const blob = new Blob([event.data], {
-            type: `video/${options.fileType}`,
+            type: `video/${args?.options?.mimeType || recording.mimeType}`,
           });
           const url = URL.createObjectURL(blob);
           recording.objectURL = url;
@@ -273,7 +271,9 @@ export function useRecordWebcam(args?: UseRecordWebcam) {
         downloadElement.href = recording.objectURL;
       }
 
-      downloadElement.download = `${options.fileName}.${options.fileType}`;
+      downloadElement.download = `${
+        args?.options?.fileName || recording.fileName
+      }.${args?.options?.fileType || recording.fileType}`;
       downloadElement.click();
     } catch (error) {
       handleError('download', error, recordingId);
@@ -286,19 +286,37 @@ export function useRecordWebcam(args?: UseRecordWebcam) {
   ): Promise<Recording | void> => {
     try {
       const recording = getRecording(recordingId);
-      const tracks = recording?.recorder?.stream.getTracks();
-
-      if (tracks?.length) {
-        tracks.forEach((track) => {
+      if (recording.webcamRef.current?.srcObject) {
+        const stream = <MediaStream>recording.webcamRef.current?.srcObject;
+        const tracks = stream.getTracks() || [];
+        tracks?.forEach((track) => {
           track.applyConstraints({
             ...constraints,
           });
         });
       }
-
       return recording;
     } catch (error) {
       handleError('applyConstraints', error, recordingId);
+    }
+  };
+
+  const applyRecordingOptions = async (
+    recordingId: string,
+    options: Options
+  ): Promise<Recording | void> => {
+    try {
+      const recording = getRecording(recordingId);
+      if (options.fileName) {
+        recording.fileName = options.fileName;
+      }
+      if (options.fileType) {
+        recording.fileType = options.fileType;
+      }
+      const updatedRecording = await updateRecording(recording.id, recording);
+      return updatedRecording;
+    } catch (error) {
+      handleError('applyRecordingOptions', error, recordingId);
     }
   };
 
@@ -311,6 +329,7 @@ export function useRecordWebcam(args?: UseRecordWebcam) {
   return {
     activeRecordings,
     applyConstraints,
+    applyRecordingOptions,
     cancelRecording,
     clearAllRecordings,
     clearPreview,

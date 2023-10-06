@@ -17,7 +17,10 @@ export type Recording = {
   id: string;
   audioId: string;
   audioLabel?: string;
+  fileName: string;
+  fileType: string;
   isMuted: boolean;
+  mimeType: string;
   objectURL: string | null;
   onDataAvailableResolve: Function | null;
   onDataAvailablePromise: Promise<void>;
@@ -50,7 +53,10 @@ export function createRecording({
     id: recordingId,
     audioId,
     audioLabel,
+    fileName: String(new Date().getTime()),
+    fileType: 'mp4',
     isMuted: false,
+    mimeType: 'video/mp4',
     objectURL: null,
     onDataAvailableResolve,
     onDataAvailablePromise,

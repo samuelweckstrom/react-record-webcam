@@ -1,11 +1,7 @@
 export const DEFAULT_RECORDER_OPTIONS: MediaRecorderOptions = {
   audioBitsPerSecond: 128000,
   videoBitsPerSecond: 2500000,
-} as const;
-
-export const DEFAULT_OPTIONS = {
-  fileName: String(new Date().getTime()),
-  fileType: 'mp4',
+  mimeType: 'video/mp4',
 } as const;
 
 export const ERROR_MESSAGES = {
