@@ -1,7 +1,7 @@
 export const DEFAULT_RECORDER_OPTIONS: MediaRecorderOptions = {
   audioBitsPerSecond: 128000,
   videoBitsPerSecond: 2500000,
-  mimeType: 'video/mp4',
+  mimeType: 'video/webm;codecs=vp9',
 } as const;
 
 export const ERROR_MESSAGES = {
