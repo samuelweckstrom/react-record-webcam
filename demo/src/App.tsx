@@ -2,103 +2,146 @@ import React from 'react';
 import { useRecordWebcam } from 'react-record-webcam';
 import './styles.css';
 
-const OPTIONS = {
-  fileName: 'test-filename',
-  width: 1920,
-  height: 1080,
-  disableLogs: true,
-} as const;
-
 export function App() {
-  const recordWebcam = useRecordWebcam(OPTIONS);
+  const {
+    activeRecordings,
+    cancelRecording,
+    clearPreview,
+    closeCamera,
+    createRecording,
+    devicesByType,
+    devicesById,
+    download,
+    muteRecording,
+    openCamera,
+    pauseRecording,
+    resumeRecording,
+    startRecording,
+    stopRecording,
+  } = useRecordWebcam();
 
-  const getRecordingFile = async () => {
-    const blob = await recordWebcam.getRecording();
-    console.log({ blob });
+  const [videoDeviceId, setVideoDeviceId] = React.useState<string>('');
+  const [audioDeviceId, setAudioDeviceId] = React.useState<string>('');
+
+  const handleSelect = async (event: any) => {
+    const { deviceid: deviceId } =
+      event.target.options[event.target.selectedIndex].dataset;
+    if (devicesById[deviceId].type === 'videoinput') {
+      setVideoDeviceId(deviceId);
+    }
+    if (devicesById[deviceId].type === 'audioinput') {
+      setAudioDeviceId(deviceId);
+    }
+  };
+
+  const quickDemo = async () => {
+    try {
+      const recording = await createRecording();
+      if (!recording) return;
+      await openCamera(recording.id);
+      await startRecording(recording.id);
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await stopRecording(recording.id);
+      await closeCamera(recording.id);
+    } catch (error) {
+      console.log({ error });
+    }
+  };
+
+  const start = async () => {
+    const recording = await createRecording(videoDeviceId, audioDeviceId);
+    if (recording) await openCamera(recording.id);
   };
 
   return (
     <div>
-      <div className="demo-section">
-        <h1>Demo</h1>
-        <button onClick={recordWebcam.muteAudio}>
-          {recordWebcam.isMuted ? 'Unmute' : 'Mute'}
-        </button>
-        <p>Camera webcamStatus: {recordWebcam.webcamStatus}</p>
+      <div className="input">
         <div>
-          <button
-            disabled={
-              recordWebcam.webcamStatus === 'OPEN' ||
-              recordWebcam.webcamStatus === 'RECORDING' ||
-              recordWebcam.webcamStatus === 'RECORDED'
-            }
-            onClick={recordWebcam.open}
-          >
-            Open camera
-          </button>
-          {!(
-            recordWebcam.webcamStatus === 'NO_CAMERA' ||
-            recordWebcam.webcamStatus === 'ERROR' ||
-            recordWebcam.webcamStatus === 'CLOSED'
-          ) && (
-            <>
+          <h4>Select video input</h4>
+          <select className="input-select" onChange={handleSelect}>
+            {devicesByType?.video?.map((device) => (
+              <option key={device.deviceId} data-deviceid={device.deviceId}>
+                {device.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <h4>Select audio input</h4>
+          <select className="input-select" onChange={handleSelect}>
+            {devicesByType?.audio?.map((device) => (
+              <option key={device.deviceId} data-deviceid={device.deviceId}>
+                {device.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="input-start">
+        <button onClick={quickDemo}>Record 3s video</button>
+        <button onClick={start}>Open camera</button>
+      </div>
+      <div className="devices">
+        {activeRecordings?.map((recording: Recording) => (
+          <div className="device" key={recording.id}>
+            <p>Live</p>
+            <div className="device-list">
+              <small>Status: {recording.status}</small>
+              <small>Video: {recording.videoLabel}</small>
+              <small>Audio: {recording.audioLabel}</small>
+            </div>
+            <video ref={recording.webcamRef} loop autoPlay playsInline />
+            <div className="controls">
               <button
-                disabled={recordWebcam.webcamStatus === 'CLOSED'}
-                onClick={recordWebcam.close}
+                disabled={
+                  recording.status === 'RECORDING' ||
+                  recording.status === 'PAUSED'
+                }
+                onClick={() => startRecording(recording.id)}
               >
-                Close camera
+                Record
               </button>
               <button
                 disabled={
-                  recordWebcam.webcamStatus === 'CLOSED' ||
-                  recordWebcam.webcamStatus === 'RECORDING' ||
-                  recordWebcam.webcamStatus === 'RECORDED'
+                  recording.status !== 'RECORDING' &&
+                  recording.status !== 'PAUSED'
                 }
-                onClick={recordWebcam.start}
+                onClick={() =>
+                  recording.status === 'PAUSED'
+                    ? resumeRecording(recording.id)
+                    : pauseRecording(recording.id)
+                }
               >
-                Start recording
+                {recording.status === 'PAUSED' ? 'Resume' : 'Pause'}
               </button>
               <button
-                disabled={recordWebcam.webcamStatus !== 'RECORDING'}
-                onClick={recordWebcam.stop}
+                className={recording.isMuted ? 'selected' : ''}
+                onClick={() => muteRecording(recording.id)}
               >
-                Stop recording
+                Mute
               </button>
-              {recordWebcam.webcamStatus === 'RECORDED' && (
-                <>
-                  <button onClick={recordWebcam.retake}>Retake</button>
-                  <button onClick={recordWebcam.download}>Download</button>
-                  <button onClick={getRecordingFile}>Get recording</button>
-                </>
-              )}
-            </>
-          )}
-        </div>
-
-        <video
-          ref={recordWebcam.webcamRef}
-          style={{
-            display: `${
-              recordWebcam.webcamStatus === 'OPEN' ||
-              recordWebcam.webcamStatus === 'RECORDING'
-                ? 'block'
-                : 'none'
-            }`,
-          }}
-          autoPlay
-          muted
-        />
-        <video
-          ref={recordWebcam.previewRef}
-          style={{
-            display: `${
-              recordWebcam.webcamStatus === 'RECORDED' ? 'block' : 'none'
-            }`,
-          }}
-          autoPlay
-          muted
-          loop
-        />
+              <button
+                disabled={recording.status !== 'RECORDING'}
+                onClick={() => stopRecording(recording.id)}
+              >
+                Stop
+              </button>
+              <button onClick={() => cancelRecording(recording.id)}>
+                Cancel
+              </button>
+            </div>
+            <div className="preview">
+              <p>Preview</p>
+              <video ref={recording.previewRef} autoPlay loop playsInline />
+              <div className="controls">
+                <button onClick={() => download(recording.id)}>Download</button>
+                <button onClick={() => clearPreview(recording.id)}>
+                  Clear preview
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
