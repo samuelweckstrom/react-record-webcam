@@ -1,4 +1,4 @@
-import { createRef, useState, useCallback, useRef } from 'react';
+import { createRef, useState, useCallback } from 'react';
 import { ERROR_MESSAGES } from './constants';
 
 export enum STATUS {
@@ -75,44 +75,44 @@ export type RecordingError = {
   error: unknown;
 };
 
-const recordingMapRef = new Map<string, Recording>();
+const recordingMap = new Map<string, Recording>();
 
 export function useRecording(isDevMode?: boolean) {
   const [activeRecordings, setActiveRecordings] = useState<Recording[]>([]);
   const [errorMessage, setErrorMessage] = useState<RecordingError | null>(null);
 
   const updateActiveRecordings = async () => {
-    const recordings = Array.from(recordingMapRef.values());
+    const recordings = Array.from(recordingMap.values());
     setActiveRecordings(recordings);
   };
 
   const isRecordingCreated = useCallback(
     (recordingId: string): boolean => {
-      const isCreated = recordingMapRef.get(recordingId);
+      const isCreated = recordingMap.get(recordingId);
       return Boolean(isCreated);
     },
-    [recordingMapRef]
+    [recordingMap]
   );
 
   const getRecording = useCallback(
     (recordingId: string): Recording => {
-      const recording = recordingMapRef.get(recordingId);
+      const recording = recordingMap.get(recordingId);
       if (!recording) {
         throw new Error(ERROR_MESSAGES.BY_ID_NOT_FOUND);
       }
       return recording;
     },
-    [recordingMapRef]
+    [recordingMap]
   );
 
   const setRecording = useCallback(
     async (params: SetRecording): Promise<Recording> => {
       const recording = createRecording(params);
-      recordingMapRef.set(recording.id, recording);
+      recordingMap.set(recording.id, recording);
       await updateActiveRecordings();
       return recording;
     },
-    [recordingMapRef]
+    [recordingMap]
   );
 
   const updateRecording = useCallback(
@@ -120,33 +120,33 @@ export function useRecording(isDevMode?: boolean) {
       recordingId: string,
       updatedValues: Partial<Recording>
     ): Promise<Recording> => {
-      const recording = <Recording>recordingMapRef.get(recordingId);
-      recordingMapRef.set(recordingId, {
+      const recording = <Recording>recordingMap.get(recordingId);
+      recordingMap.set(recordingId, {
         ...recording,
         ...updatedValues,
       });
       await updateActiveRecordings();
       return getRecording(recordingId);
     },
-    [recordingMapRef, setRecording, getRecording]
+    [recordingMap, setRecording, getRecording]
   );
 
   const deleteRecording = useCallback(
     async (recordingId: string): Promise<void> => {
-      recordingMapRef.delete(recordingId);
+      recordingMap.delete(recordingId);
       await updateActiveRecordings();
     },
-    [recordingMapRef]
+    [recordingMap]
   );
 
   const clearAllRecordings = async (): Promise<void> => {
-    Array.from(recordingMapRef.values()).forEach((recording) => {
+    Array.from(recordingMap.values()).forEach((recording) => {
       const stream = <MediaStream>recording.webcamRef.current?.srcObject;
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
       }
     });
-    recordingMapRef.clear();
+    recordingMap.clear();
     setActiveRecordings([]);
   };
 
