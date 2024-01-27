@@ -4,29 +4,36 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "types": "dist/index.d.ts",
   "repository": "git@github.com:samuelweckstrom/react-record-webcam.git",
   "author": "Samuel Weckström",
   "license": "MIT",
   "peerDependencies": {
-    "react": "*"
+    "react": "^16.3 || ^17.0 || ^18.0"
   },
   "scripts": {
     "start": "rm -rf ./dist && tsc --watch",
-    "build": "rm -rf ./dist && tsc"
+    "build": "tsup"
   },
   "keywords": [
     "react",
+    "record",
     "webcam",
     "multi",
+    "recording",
     "concurrent",
     "simultaneous",
-    "record",
-    "recording",
     "hook",
     "video",
     "audio"
-  ]
+  ],
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  }
 }
