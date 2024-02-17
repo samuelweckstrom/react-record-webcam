@@ -30,6 +30,7 @@ export type Recording = {
   videoId: string;
   videoLabel?: string;
   webcamRef: React.RefObject<HTMLVideoElement>;
+  blobs: Blob[];
 };
 
 type SetRecording = Pick<
@@ -66,6 +67,7 @@ export function createRecording({
     videoId,
     videoLabel,
     webcamRef: createRef(),
+    blobs: [],
   };
   return recording;
 }

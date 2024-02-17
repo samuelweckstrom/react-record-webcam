@@ -13,6 +13,7 @@ type Options = {
   fileName: string;
   fileType: string;
   mimeType: string;
+  recorderTimeSlice: number;
 };
 
 type UseRecordWebcam = {
@@ -137,21 +138,31 @@ export function useRecordWebcam(args?: Partial<UseRecordWebcam>) {
       recording.recorder = new MediaRecorder(stream, recorderOptions);
       recording.recorder.ondataavailable = async (event: BlobEvent) => {
         if (event.data.size) {
-          const blob = new Blob([event.data], {
-            type: `video/${args?.options?.mimeType || recording.mimeType}`,
-          });
-          const url = URL.createObjectURL(blob);
-          recording.objectURL = url;
-
-          if (recording.previewRef.current)
-            recording.previewRef.current.src = url;
-          recording.status = STATUS.STOPPED;
-
-          await updateRecording(recording.id, recording);
-          recording.onDataAvailableResolve?.();
+          recording.blobs.push(event.data);
         }
       };
-      recording.recorder.start();
+
+      recording.recorder.onstop = async () => {
+        // Create a new blob from the array of blobs
+        const blob = new Blob(recording.blobs, {
+          type: `video/${args?.options?.mimeType || recording.mimeType}`,
+        });
+        const url = URL.createObjectURL(blob);
+        recording.objectURL = url;
+
+        if (recording.previewRef.current)
+          recording.previewRef.current.src = url;
+        recording.status = STATUS.STOPPED;
+
+        await updateRecording(recording.id, recording);
+        recording.onDataAvailableResolve?.();
+      };
+
+      recording.recorder.onerror = (error: Event) => {
+        handleError('startRecording', error, recordingId);
+      };
+
+      recording.recorder.start(args?.options?.recorderTimeSlice || 1000);
       recording.status = STATUS.RECORDING;
       const updatedRecording = await updateRecording(recording.id, recording);
       return updatedRecording;

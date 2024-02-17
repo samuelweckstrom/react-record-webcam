@@ -4,6 +4,8 @@ export const DEFAULT_RECORDER_OPTIONS: MediaRecorderOptions = {
   mimeType: 'video/webm;codecs=vp9',
 } as const;
 
+export const DEFAULT_RECORDER_TIME_SLICE = 1000;
+
 export const ERROR_MESSAGES = {
   BY_ID_NOT_FOUND: 'No recording by id found',
   SESSION_EXISTS: 'Recording session already exists',
