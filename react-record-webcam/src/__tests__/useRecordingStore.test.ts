@@ -1,17 +1,15 @@
 import { renderHook, act } from '@testing-library/react';
-import { useRecording } from '../useRecording';
-import { ERROR_MESSAGES } from '../constants';
+import { useRecordingStore, ERROR_MESSAGES } from '../useRecordingStore';
 
-describe('useRecording', () => {
+describe('useRecordingStore', () => {
   afterAll(() => {
     jest.restoreAllMocks();
   });
 
   it('should initiate with default values', () => {
-    const { result } = renderHook(() => useRecording());
+    const { result } = renderHook(() => useRecordingStore());
 
     expect(result.current.activeRecordings).toEqual([]);
-    expect(result.current.errorMessage).toBeNull();
   });
 
   it('should be able to set a recording', () => {
@@ -21,7 +19,7 @@ describe('useRecording', () => {
       videoLabel: 'test-video-label',
       audioLabel: 'test-audio-label',
     };
-    const { result } = renderHook(() => useRecording());
+    const { result } = renderHook(() => useRecordingStore());
 
     act(() => {
       result.current.setRecording(recording);
@@ -41,7 +39,7 @@ describe('useRecording', () => {
       audioLabel: 'test-audio-label',
     };
     const recordingId = `${recording.videoId}-${recording.audioId}`;
-    const { result } = renderHook(() => useRecording());
+    const { result } = renderHook(() => useRecordingStore());
 
     act(() => {
       result.current.setRecording(recording);
@@ -52,11 +50,11 @@ describe('useRecording', () => {
   });
 
   it('should throw an error if trying to get a non-existing recording', () => {
-    const { result } = renderHook(() => useRecording());
+    const { result } = renderHook(() => useRecordingStore());
 
     expect(() => {
       result.current.getRecording('invalid-id');
-    }).toThrow(ERROR_MESSAGES.BY_ID_NOT_FOUND);
+    }).toThrow(ERROR_MESSAGES.NO_RECORDING_WITH_ID);
   });
 
   it('should delete a recording', () => {
@@ -66,7 +64,7 @@ describe('useRecording', () => {
       videoLabel: 'test-video-label',
       audioLabel: 'test-audio-label',
     };
-    const { result } = renderHook(() => useRecording());
+    const { result } = renderHook(() => useRecordingStore());
     act(() => {
       result.current.setRecording(recording);
     });
@@ -81,7 +79,7 @@ describe('useRecording', () => {
 
     expect(() => {
       result.current.getRecording(`${recording.videoId}-${recording.audioId}`);
-    }).toThrow(ERROR_MESSAGES.BY_ID_NOT_FOUND);
+    }).toThrow(ERROR_MESSAGES.NO_RECORDING_WITH_ID);
   });
 
   it('should cleanup all recordings', () => {
@@ -98,23 +96,27 @@ describe('useRecording', () => {
       audioLabel: 'test-audio-label2',
     };
 
-    const { result } = renderHook(() => useRecording());
+    const { result } = renderHook(() => useRecordingStore());
+
     act(() => {
       result.current.setRecording(recording1);
       result.current.setRecording(recording2);
     });
+
     act(() => {
       result.current.clearAllRecordings();
     });
+
     expect(() => {
       result.current.getRecording(
         `${recording1.videoId}-${recording1.audioId}`
       );
-    }).toThrow(ERROR_MESSAGES.BY_ID_NOT_FOUND);
+    }).toThrow(ERROR_MESSAGES.NO_RECORDING_WITH_ID);
+
     expect(() => {
       result.current.getRecording(
         `${recording2.videoId}-${recording2.audioId}`
       );
-    }).toThrow(ERROR_MESSAGES.BY_ID_NOT_FOUND);
+    }).toThrow(ERROR_MESSAGES.NO_RECORDING_WITH_ID);
   });
 });

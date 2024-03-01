@@ -1,328 +1,125 @@
-import { useEffect, useMemo } from 'react';
-import { useRecording, STATUS } from './useRecording';
-import { useDeviceInitialization } from './devices';
-import { startStream } from './stream';
-import {
-  DEFAULT_CONSTRAINTS,
-  DEFAULT_RECORDER_OPTIONS,
-  ERROR_MESSAGES,
-} from './constants';
-import type { Recording } from './useRecording';
+import { useEffect, useState } from 'react';
 
-type Options = {
+import { getDevices, type Devices, type ById, type ByType } from './devices';
+
+import { useRecorder, type UseRecorder } from './useRecorder';
+import { useCamera, type UseCamera } from './useCamera';
+import { type Recording } from './useRecordingStore';
+
+/**
+ * Options for customizing the recording settings.
+ */
+export type Options = {
+  /** The name of the output file. */
   fileName: string;
+  /** The MIME type of the output file. */
   fileType: string;
-  mimeType: string;
+  /** The time interval (in milliseconds) for splitting the recording into chunks. */
+  timeSlice: number;
 };
 
-type UseRecordWebcam = {
-  constraints: Partial<MediaTrackConstraints>;
-  recorderOptions: Partial<MediaRecorderOptions>;
-  options: Partial<Options>;
+/**
+ * Configuration options for the `useRecordWebcam` hook.
+ */
+export type UseRecordWebcamArgs = {
+  /** Media track constraints for the camera. */
+  mediaTrackConstraints?: Partial<MediaTrackConstraints>;
+  /** Options for the MediaRecorder API. */
+  mediaRecorderOptions?: Partial<MediaRecorderOptions>;
+  /** Custom options for recording. */
+  options?: Partial<Options>;
 };
 
-export function useRecordWebcam(args?: Partial<UseRecordWebcam>) {
-  const { devicesByType, devicesById, initialDevices } =
-    useDeviceInitialization();
+/**
+ * @typedef {Object} UseRecordWebcam
+ * The return type of `useRecordWebcam`, providing access to webcam recording functionalities.
+ */
+export type UseRecordWebcam = {
+  /** Array of active recordings. */
+  activeRecordings: Recording[];
+  /** Function to clear all recordings. */
+  clearAllRecordings: () => Promise<void>;
+  /** Function to clear the current error message. */
+  clearError: () => void;
+  /** Object containing devices by their ID. */
+  devicesById: ById | undefined;
+  /** Object categorizing devices by their type. */
+  devicesByType: ByType | undefined;
+  /** The current error message, if any, related to recording. */
+  errorMessage: string | null;
+} & UseCamera &
+  UseRecorder;
+
+const isDevMode = false;
+let isInit = false;
+
+/**
+ * React Record Webcam hook.
+ * @param args Configuration options for the hook.
+ * @returns {UseRecordWebcam} providing access to webcam recording functionalities.
+ */
+export function useRecordWebcam({
+  mediaRecorderOptions,
+  mediaTrackConstraints,
+  options,
+}: Partial<UseRecordWebcamArgs> = {}): UseRecordWebcam {
+  const [devices, setDevices] = useState<Devices>();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  function handleError(functionName: string, error: any): void {
+    if (isDevMode) {
+      console.error(`@${functionName}: `, error);
+    }
+
+    const message =
+      typeof error === 'string'
+        ? error
+        : typeof error.message === 'string'
+        ? error.message
+        : '';
+    setErrorMessage(message);
+  }
+
+  function clearError(): void {
+    setErrorMessage(null);
+  }
+
+  const { applyConstraints, closeCamera, openCamera } = useCamera({
+    mediaTrackConstraints,
+    handleError,
+  });
   const {
     activeRecordings,
+    applyRecordingOptions,
+    cancelRecording,
     clearAllRecordings,
-    deleteRecording,
-    errorMessage,
-    getRecording,
-    handleError,
-    isRecordingCreated,
-    setRecording,
-    updateRecording,
-  } = useRecording();
+    clearPreview,
+    createRecording,
+    download,
+    muteRecording,
+    pauseRecording,
+    resumeRecording,
+    startRecording,
+    stopRecording,
+  } = useRecorder({ mediaRecorderOptions, options, devices, handleError });
 
-  const constraints: MediaTrackConstraints = useMemo(
-    () => ({
-      ...DEFAULT_CONSTRAINTS,
-      ...args?.constraints,
-    }),
-    [args]
-  );
-
-  const recorderOptions: MediaRecorderOptions = useMemo(
-    () => ({
-      ...DEFAULT_RECORDER_OPTIONS,
-      ...args?.recorderOptions,
-    }),
-    [args]
-  );
-
-  const createRecording = async (
-    videoId?: string,
-    audioId?: string
-  ): Promise<Recording | void> => {
+  async function init() {
     try {
-      const recordingId = `${videoId}-${audioId}`;
-      const isCreated = isRecordingCreated(recordingId);
-      if (isCreated) throw new Error(ERROR_MESSAGES.SESSION_EXISTS);
-
-      const videoLabel = videoId
-        ? devicesById?.[videoId].label
-        : initialDevices.video?.label;
-
-      const audioLabel = audioId
-        ? devicesById?.[audioId].label
-        : initialDevices.audio?.label;
-
-      const recording = await setRecording({
-        videoId: <string>videoId || <string>initialDevices.video?.deviceId,
-        audioId: <string>audioId || <string>initialDevices.audio?.deviceId,
-        videoLabel,
-        audioLabel,
-      });
-
-      return recording;
+      const devices = await getDevices();
+      setDevices(devices);
     } catch (error) {
-      handleError('createRecording', error, `${videoId}-${audioId}`);
+      handleError('init', error);
     }
-  };
-
-  const openCamera = async (recordingId: string): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-
-      const stream = await startStream(
-        recording.videoId,
-        recording.audioId,
-        constraints
-      );
-
-      if (recording.webcamRef.current) {
-        recording.webcamRef.current.srcObject = stream;
-        await recording.webcamRef.current.play();
-      }
-
-      recording.status = STATUS.OPEN;
-      const updatedRecording = await updateRecording(recording.id, recording);
-
-      return updatedRecording;
-    } catch (error) {
-      handleError('openCamera', error);
-    }
-  };
-
-  const closeCamera = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      if (recording.webcamRef.current) {
-        const stream = <MediaStream>recording.webcamRef.current.srcObject;
-        stream?.getTracks().forEach((track) => track.stop());
-        recording.recorder?.ondataavailable &&
-          (recording.recorder.ondataavailable = null);
-        recording.webcamRef.current.srcObject = null;
-        recording.webcamRef.current.load();
-      }
-      recording.status = STATUS.CLOSED;
-
-      const updatedRecording = await updateRecording(recording.id, recording);
-      return updatedRecording;
-    } catch (error) {
-      handleError('closeCamera', error, recordingId);
-    }
-  };
-
-  const startRecording = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      const stream = <MediaStream>recording.webcamRef.current?.srcObject;
-      recording.recorder = new MediaRecorder(stream, recorderOptions);
-      recording.recorder.ondataavailable = async (event: BlobEvent) => {
-        if (event.data.size) {
-          const blob = new Blob([event.data], {
-            type: `video/${args?.options?.mimeType || recording.mimeType}`,
-          });
-          const url = URL.createObjectURL(blob);
-          recording.objectURL = url;
-
-          if (recording.previewRef.current)
-            recording.previewRef.current.src = url;
-          recording.status = STATUS.STOPPED;
-
-          await updateRecording(recording.id, recording);
-          recording.onDataAvailableResolve?.();
-        }
-      };
-      recording.recorder.start();
-      recording.status = STATUS.RECORDING;
-      const updatedRecording = await updateRecording(recording.id, recording);
-      return updatedRecording;
-    } catch (error) {
-      handleError('startRecording', error, recordingId);
-    }
-  };
-
-  const pauseRecording = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      recording.recorder?.pause();
-      recording.status = STATUS.PAUSED;
-      const updatedRecording = await updateRecording(recording.id, recording);
-      return updatedRecording;
-    } catch (error) {
-      handleError('pauseRecording', error, recordingId);
-    }
-  };
-
-  const resumeRecording = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      recording.recorder?.resume();
-      recording.status = STATUS.RECORDING;
-      const updatedRecording = await updateRecording(recording.id, recording);
-      return updatedRecording;
-    } catch (error) {
-      handleError('resumeRecording', error, recordingId);
-    }
-  };
-
-  const stopRecording = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      let recording = getRecording(recordingId);
-      recording.recorder?.stop();
-      await recording.onDataAvailablePromise;
-      recording = getRecording(recordingId);
-      recording.status = STATUS.STOPPED;
-      const updatedRecording = await updateRecording(recording.id, recording);
-      return updatedRecording;
-    } catch (error) {
-      handleError('stopRecording', error, recordingId);
-    }
-  };
-
-  const cancelRecording = async (recordingId: string): Promise<undefined> => {
-    try {
-      const recording = getRecording(recordingId);
-      const tracks = recording?.recorder?.stream.getTracks();
-      recording?.recorder?.stop();
-      tracks?.forEach((track) => track.stop());
-      recording.recorder?.ondataavailable &&
-        (recording.recorder.ondataavailable = null);
-
-      if (recording.webcamRef.current) {
-        const stream = <MediaStream>recording.webcamRef.current.srcObject;
-        stream?.getTracks().forEach((track) => track.stop());
-
-        recording.webcamRef.current.srcObject = null;
-        recording.webcamRef.current.load();
-      }
-
-      URL.revokeObjectURL(<string>recording.objectURL);
-
-      recording.status = STATUS.INITIAL;
-      const updatedRecording = await updateRecording(recording.id, recording);
-      await deleteRecording(updatedRecording.id);
-    } catch (error) {
-      handleError('cancelRecording', error, recordingId);
-    }
-  };
-
-  const clearPreview = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      if (recording.previewRef.current) recording.previewRef.current.src = '';
-      recording.status = STATUS.INITIAL;
-      URL.revokeObjectURL(<string>recording.objectURL);
-      const updatedRecording = await updateRecording(recording.id, recording);
-      return updatedRecording;
-    } catch (error) {
-      handleError('clearPreview', error, recordingId);
-    }
-  };
-
-  const muteRecording = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      recording.recorder?.stream.getAudioTracks().forEach((track) => {
-        track.enabled = !track.enabled;
-      });
-      recording.isMuted = !recording.isMuted;
-      const updatedRecording = await updateRecording(recording.id, recording);
-      return updatedRecording;
-    } catch (error) {
-      handleError('muteRecording', error, recordingId);
-    }
-  };
-
-  const download = async (recordingId: string): Promise<void> => {
-    try {
-      const recording = getRecording(recordingId);
-      const downloadElement = document.createElement('a');
-
-      if (recording?.objectURL) {
-        downloadElement.href = recording.objectURL;
-      }
-
-      downloadElement.download = `${
-        args?.options?.fileName || recording.fileName
-      }.${args?.options?.fileType || recording.fileType}`;
-      downloadElement.click();
-    } catch (error) {
-      handleError('download', error, recordingId);
-    }
-  };
-
-  const applyConstraints = async (
-    recordingId: string,
-    constraints: MediaTrackConstraints
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      if (recording.webcamRef.current?.srcObject) {
-        const stream = <MediaStream>recording.webcamRef.current?.srcObject;
-        const tracks = stream.getTracks() || [];
-        tracks?.forEach((track) => {
-          track.applyConstraints({
-            ...constraints,
-          });
-        });
-      }
-      return recording;
-    } catch (error) {
-      handleError('applyConstraints', error, recordingId);
-    }
-  };
-
-  const applyRecordingOptions = async (
-    recordingId: string,
-    options: Options
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      if (options.fileName) {
-        recording.fileName = options.fileName;
-      }
-      if (options.fileType) {
-        recording.fileType = options.fileType;
-      }
-      const updatedRecording = await updateRecording(recording.id, recording);
-      return updatedRecording;
-    } catch (error) {
-      handleError('applyRecordingOptions', error, recordingId);
-    }
-  };
+  }
 
   useEffect(() => {
+    if (!isInit) {
+      isInit = true;
+      init();
+    }
     return () => {
       clearAllRecordings();
+      isInit = false;
     };
   }, []);
 
@@ -332,11 +129,12 @@ export function useRecordWebcam(args?: Partial<UseRecordWebcam>) {
     applyRecordingOptions,
     cancelRecording,
     clearAllRecordings,
+    clearError,
     clearPreview,
     closeCamera,
     createRecording,
-    devicesById,
-    devicesByType,
+    devicesById: devices?.devicesById,
+    devicesByType: devices?.devicesByType,
     download,
     errorMessage,
     muteRecording,
