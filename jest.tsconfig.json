@@ -37,6 +37,6 @@
     "node_modules"
   ],
   "include": [
-    "./react-record-webcam/src/*"
+    "./react-record-webcam/src/**/*"
   ]
 }

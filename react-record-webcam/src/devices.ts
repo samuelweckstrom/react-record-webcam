@@ -1,14 +1,13 @@
-import { useEffect, useState } from 'react';
-import { useRecording } from './useRecording';
+import { ERROR_MESSAGES } from './useRecordingStore';
 
 type ByIdDevice = {
   label: string;
   type: 'videoinput' | 'audioinput';
 };
 
-type ById = Record<string, ByIdDevice>;
+export type ById = Record<string, ByIdDevice>;
 
-async function byId(devices: MediaDeviceInfo[]): Promise<ById> {
+function byId(devices: MediaDeviceInfo[]): ById {
   return devices.reduce<ById>(
     (result, { deviceId, kind, label }: MediaDeviceInfo) => {
       if (kind === 'videoinput' || kind === 'audioinput') {
@@ -28,12 +27,12 @@ type ByLabelDevice = {
   deviceId: string;
 };
 
-type ByType = {
+export type ByType = {
   video: ByLabelDevice[];
   audio: ByLabelDevice[];
 };
 
-async function byType(devices: MediaDeviceInfo[]): Promise<ByType> {
+function byType(devices: MediaDeviceInfo[]): ByType {
   return devices.reduce<ByType>(
     (result, { deviceId, kind, label }: MediaDeviceInfo) => {
       if (kind === 'videoinput') {
@@ -63,7 +62,7 @@ async function getUserPermission(): Promise<MediaDeviceInfo[]> {
     });
     return mediaDevices;
   } catch (error) {
-    throw new Error('getUserPermission');
+    throw new Error(ERROR_MESSAGES.NO_USER_PERMISSION);
   }
 }
 
@@ -72,54 +71,48 @@ type InitialDevice = {
   label: string;
 };
 
-type InitialDevices = {
+export type InitialDevices = {
   video: InitialDevice | null;
   audio: InitialDevice | null;
 };
 
-export function useDeviceInitialization(): {
+export type Devices = {
   devicesByType: ByType;
   devicesById: ById;
   initialDevices: InitialDevices;
-} {
-  const { handleError } = useRecording();
-  const [devicesByType, setDevicesByType] = useState<ByType>({
+};
+
+let isInit = false;
+
+export async function getDevices(): Promise<Devices> {
+  let devicesByType: ByType = {
     video: [],
     audio: [],
-  });
-  const [devicesById, setDevicesById] = useState<ById>({});
-  const [initialDevices, setInitialDevices] = useState<InitialDevices>({
+  };
+  let devicesById: ById = {};
+  let initialDevices: InitialDevices = {
     video: null,
     audio: null,
-  });
+  };
 
-  useEffect(() => {
-    const initializeDevices = async () => {
-      try {
-        const mediaDevices = await getUserPermission();
-        const [allById, allByType] = await Promise.all([
-          byId(mediaDevices),
-          byType(mediaDevices),
-        ]);
-        setDevicesById(allById);
-        setDevicesByType(allByType);
-        setInitialDevices({
-          video: {
-            deviceId: allByType.video[0].deviceId,
-            label: allByType.video[0].label,
-          },
-          audio: {
-            deviceId: allByType.audio[0].deviceId,
-            label: allByType.audio[0].deviceId,
-          },
-        });
-      } catch (error) {
-        handleError('initializeDevices', error);
-      }
+  if (typeof window !== 'undefined' && isInit === false) {
+    isInit = true;
+
+    const mediaDevices = await getUserPermission();
+
+    devicesById = byId(mediaDevices);
+    devicesByType = byType(mediaDevices);
+    initialDevices = {
+      video: {
+        deviceId: devicesByType.video[0].deviceId,
+        label: devicesByType.video[0].label,
+      },
+      audio: {
+        deviceId: devicesByType.audio[0].deviceId,
+        label: devicesByType.audio[0].label,
+      },
     };
-
-    initializeDevices();
-  }, []);
+  }
 
   return { devicesByType, devicesById, initialDevices };
 }
