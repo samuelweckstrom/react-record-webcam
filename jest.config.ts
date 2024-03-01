@@ -6,10 +6,14 @@ module.exports = {
   transformIgnorePatterns: ['/node_modules/'],
   verbose: true,
   moduleFileExtensions: ['js', 'ts', 'tsx', 'json', 'node'],
+  modulePathIgnorePatterns: ['<rootDir>/demo'],
   testMatch: [
     '<rootDir>/react-record-webcam/src/__tests__/?(*.)+(spec|test).ts?(x)',
   ],
-  setupFilesAfterEnv: ['@testing-library/jest-dom'],
+  setupFilesAfterEnv: [
+    '@testing-library/jest-dom',
+    '<rootDir>/react-record-webcam/src/__tests__/mocks/browser.mock.ts',
+  ],
   testEnvironment: 'jsdom',
   transform: {
     '^.+\\.ts?$': [

@@ -31,24 +31,27 @@ button.selected {
   color: #fff;
 }
 
-.devices {
+.recordings {
   display: flex;
-  margin: 10px 0;
+
+  width: 100%;
 }
 
-.devices> :nth-child(n + 2) {
+.recordings> :nth-child(n + 2) {
   margin: 0 10px;
 }
 
-.device {
+.recording {
   display: flex;
   flex-direction: column;
-  width: auto;
+  flex: 0 1 auto;
+  padding: 10px 0;
 }
 
-.device-list {
+.recording-info {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 .controls {

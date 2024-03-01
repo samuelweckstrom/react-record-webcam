@@ -79,83 +79,102 @@ Check the CodeSandbox links for [above demo](https://codesandbox.io/p/sandbox/li
 Pass options either when initializing the hook or at any point in your application logic using `applyOptions`.
 
 ```typescript
-const options = { fileName: string, fileType: string, mimeType: string }
-const { ... } = useRecordWebcam(options)
+const options = { ... }
+const mediaRecorderOptions = { ... }
+const mediaTrackConstraints =  { ... }
+
+const { ... } = useRecordWebcam({ 
+  options, 
+  mediaRecorderOptions, 
+  mediaTrackConstraints
+})
 
 // or
 
-const { applyOptions } = useRecordWebcam() // import utility
-applyOptions(recording.id: string, options) // add to your application logic
+const { applyOptions } = useRecordWebcam() // use utility
+applyOptions(recording.id: string, options: Options) // add to your application logic
 
 
 ```
 
-| Option | default value|
-| ------------- | ------------- |
-|`fileName`| `timestamp`|
-|`fileType`| `webm`|
-|`mimeType`| `video/webm;codecs=vp9`|
-
-If you want to use a specific video/audio codec you can pass this in the `mimeType`. For example:
-
-`'video/webm;codecs=vp9'`<br>`'video/webm;codecs=vp8'`<br>`'video/webm;codecs=h264'`<br>`'video/x-matroska;codecs=avc1'`
-
-Please [check](https://caniuse.com/?search=video%20format) that the browser supports the selected codec.
+| Option | property | default value|
+| ------------- | ------------- | ------------- |
+|`fileName`|  |`Date.now()`|
+|`fileType`| File type for download (will override inferred type from `mimeType`)  |`'webm'`|
+|`timeSlice`| Recording interval | `undefined`|
 
 <br>
 
-## Passing recorder options
+Both `mediaRecorderOptions` and `mediatrackConstraints` mirror the official API. Please see on MDN for available options:
 
-Pass recorder options when initializing the hook.
+[MDN: mediaRecorderOptions](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/MediaRecorder#options)
 
-```typescript
-const recorderOptions: { audioBitsPerSecond: number, videoBitsPerSecond: number }
-const { ... } = useRecordWebcam(recorderOptions)
-```
+[MDN: mediatrackConstraints](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints#instance_properties)
 
-Link to MDN for [supported MediaOptions](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder).
+### Codec Support
 
-<br>
-
-## Passing recording constraints
+The default codec is set to `video/webm;codecs=vp9`. If you prefer to use another one, you can check the compatibility for playback and recording with the following utilities:
 
 ```typescript
-const constraints: { aspectRatio: number, height: number, width: number }
-const { ... } = useRecordWebcam(constraints)
+const { checkCodecRecordingSupport, checkVideoCodecPlaybackSupport } = useRecordWebcam()
 
-// or
-
-const { applyConstraints } = useRecordWebcam() // import utility
-applyConstraints(recording.id: string, constraints) // add to your application logic
-
+...
+const codec = 'video/x-matroska;codecs=avc1'
+const isRecordingSupported = checkCodecRecordingSupport(codec)
+const isPlayBackSupported = checkVideoCodecPlaybackSupport(codec)
+...
 ```
 
-Link to MDN for [supported MediaConstraints](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints#instance_properties).
+To use a specific codec, pass this in the mediaRecorderOptions:
+
+```typescript
+const codec = 'video/webm;codecs=h264'
+const mediaRecorderOptions = { mimetype: codec }
+const recordWebcam = useRecordWebcam({ mediaRecorderOptions })
+```
+
+For more info see the codec guide on [MDN](https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs).
+
+## Error handling
+
+Current error message is passed from the hook, along with a object of error states which you can use for checks.
+
+```typescript
+import { useRecordWebcam, ERROR_MESSAGES } from 'react-record-webcam'
+
+const { errorMessage } = useRecordWebcam()
+
+...
+const isUserPermissionDenied = errorMessage === ERROR_MESSAGES.NO_USER_PERMISSION;
+...
+```
 
 <br>
 
 ## Full API
 
-| Method                                                                                                            | Description                                                                           |
-|-------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| `activeRecordings`                                                                            | Array of currently active recordings.                                        |
-| `applyConstraints(recordingId, constraints): Promise<Recording>`            | Apply constraints to a recording session. See [passing recording constraints](#passing-recording-constraints).                                    |
-| `applyRecordingOptions(recordingId, options) Promise<Recording>`                                                                             |Apply options to a recording. See [passing options](#passing-options). |
-| `cancelRecording(recordingId): Promise<void>`                                                             | Cancels and deletes a specified recording session.                                     |
-| `clearAllRecordings()`                                                                                      | Clears all the active recordings and resets them.                                      |
-| `clearPreview(recordingId): Promise<Recording>`                                                   | Clears the preview of a specific recording.                                            |
-| `closeCamera(recordingId): Promise<Recording>`                                                    | Closes the camera of a specified recording session.                                    |
-| `createRecording(videoId?, audioId?): Promise<Recording>`                                  | Creates a new recording session with specified video and audio IDs. If none are give the system defaults are used.                    |
-| `devicesById`                                                                                           | Available input devices by their device ID.                                            |
-| `devicesByType`                                                                                         | Available input devices based on their type (audio, video).             |
-| `download(recordingId): Promise<void>`                                                                    | Downloads the specified recording as a file.                                           |
-| `errorMessage`                                                                                          | Returns the last error message, if any, from the hook's operations.                    |
-| `muteRecording(recordingId): Promise<Recording>`                                                  | Toggles mute on or off for a specified recording session.                              |
-| `openCamera(recordingId): Promise<Recording>`                                                      | Opens the camera for a specified recording session, preparing it for recording.        |
-| `pauseRecording(recordingId): Promise<Recording>`                                                 | Pauses an ongoing recording session.                                                   |
-| `resumeRecording(recordingId): Promise<Recording>`                                                | Resumes a paused recording session.                                                    |
-| `startRecording(recordingId): Promise<Recording>`                                                 | Starts a new recording for the specified session.                                      |
-| `stopRecording(recordingId): Promise<Recording>`                                                  | Stops an ongoing recording session and finalizes the recording.                        |
+| Method/Property              | Arguments                                                     | Returns                                      | Description                                                                                                       |
+|------------------------------|---------------------------------------------------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `activeRecordings`           |                                                               | `Recording[]`                                | Array of active recordings.                                                                                       |
+| `applyConstraints`           | `recordingId: string, constraints: MediaTrackConstraints`     | `Promise<Recording \| void>`                 | Applies given constraints to the camera for a specific recording.                                                 |
+| `applyRecordingOptions`      | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Applies recording options to a specific recording.                                                                 |
+| `cancelRecording`            | `recordingId: string`                                          | `Promise<void>`                              | Cancels the current recording session.                                                                            |
+| `clearAllRecordings`         |                                                               | `Promise<void>`                              | Clears all active recordings.                                                                                     |
+| `clearError`                 |                                                               | `void`                                       | Function to clear the current error message.                                                                      |
+| `clearPreview`               | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Clears the preview of a specific recording.                                                                       |
+| `closeCamera`                | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Closes the camera for a specific recording.                                                                       |
+| `createRecording`            | `videoId?: string, audioId?: string`                          | `Promise<Recording \| void>`                 | Creates a new recording session with specified video and audio sources.                                           |
+| `devicesById`                |                                                               | `ById`                                       | Object containing devices by their ID, where `ById` is a record of `string` to `{ label: string; type: 'videoinput' \| 'audioinput'; }`. |
+| `devicesByType`              |                                                               | `ByType`                                     | Object categorizing devices by their type, where `ByType` has `video` and `audio` arrays of `{ label: string; deviceId: string; }`.     |
+| `download`                   | `recordingId: string`                                          | `Promise<void>`                              | Downloads a specific recording.                                                                                  |
+| `errorMessage`               |                                                               | `string \| null`                             | The current error message, if any, related to recording.                                                          |
+| `muteRecording`              | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Mutes or unmutes the recording audio.                                                                             |
+| `openCamera`                 | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Opens the camera for a specific recording with optional constraints.                                              |
+| `pauseRecording`             | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Pauses the current recording.                                                                                     |
+| `resumeRecording`            | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Resumes a paused recording.                                                                                       |
+| `startRecording`             | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Starts a new recording session.                                                                                   |
+| `stopRecording`              | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Stops the current recording session.                                                                              |
+                                                                           |
 
 ## License
 

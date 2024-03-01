@@ -6,12 +6,15 @@ export function App() {
   const {
     activeRecordings,
     cancelRecording,
+    clearAllRecordings,
+    clearError,
     clearPreview,
     closeCamera,
     createRecording,
-    devicesByType,
     devicesById,
+    devicesByType,
     download,
+    errorMessage,
     muteRecording,
     openCamera,
     pauseRecording,
@@ -26,10 +29,10 @@ export function App() {
   const handleSelect = async (event: any) => {
     const { deviceid: deviceId } =
       event.target.options[event.target.selectedIndex].dataset;
-    if (devicesById[deviceId].type === 'videoinput') {
+    if (devicesById?.[deviceId].type === 'videoinput') {
       setVideoDeviceId(deviceId);
     }
-    if (devicesById[deviceId].type === 'audioinput') {
+    if (devicesById?.[deviceId].type === 'audioinput') {
       setAudioDeviceId(deviceId);
     }
   };
@@ -80,12 +83,18 @@ export function App() {
       <div className="input-start">
         <button onClick={quickDemo}>Record 3s video</button>
         <button onClick={start}>Open camera</button>
+        <button onClick={() => clearAllRecordings()}>Clear all</button>
+        <button onClick={() => clearError()}>Clear error</button>
       </div>
-      <div className="devices">
-        {activeRecordings?.map((recording: Recording) => (
-          <div className="device" key={recording.id}>
-            <p>Live</p>
-            <div className="device-list">
+
+      <div>
+        <p>{errorMessage ? errorMessage : ''}</p>
+      </div>
+      <div className="recordings">
+        {activeRecordings?.map((recording) => (
+          <div className="recording" key={recording.id}>
+            <div className="recording-info">
+              <p>Live</p>
               <small>Status: {recording.status}</small>
               <small>Video: {recording.videoLabel}</small>
               <small>Audio: {recording.audioLabel}</small>
