@@ -1,6 +1,5 @@
 import React from 'react';
 import { useRecordWebcam } from 'react-record-webcam';
-import './styles.css';
 import { Button } from './components/Button';
 import { Select } from './components/Select';
 
