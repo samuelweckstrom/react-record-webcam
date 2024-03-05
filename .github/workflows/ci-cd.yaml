@@ -31,13 +31,15 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-      - name: Build package and demo
-        run: npm run build:all
+      - name: Build package
+        run: npm run build:package
+      - name: Build demo
+        run: npm run build:demo
 
       - name: Deploy to S3
         uses: jakejarvis/s3-sync-action@v0.5.1
         with:
-          args: --acl public-read --follow-symlinks --delete
+          args: --follow-symlinks --delete
         env:
           AWS_S3_BUCKET: ${{ secrets.AWS_BUCKET_NAME }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}
