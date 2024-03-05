@@ -1,6 +1,5 @@
 import React from 'react';
 import { useRecordWebcam } from 'react-record-webcam';
-import './styles.css';
 import { Button } from './components/Button';
 import { Select } from './components/Select';
 
@@ -59,7 +58,7 @@ export function App() {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 text-white">
       <h1 className="text-3xl font-bold">React Record Webcam demo</h1>
       <div className="space-y-2 my-4">
         <div className="flex">
