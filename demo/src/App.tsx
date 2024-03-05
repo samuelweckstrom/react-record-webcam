@@ -1,6 +1,8 @@
 import React from 'react';
 import { useRecordWebcam } from 'react-record-webcam';
 import './styles.css';
+import { Button } from './components/Button';
+import { Select } from './components/Select';
 
 export function App() {
   const {
@@ -57,51 +59,48 @@ export function App() {
   };
 
   return (
-    <div>
-      <div className="input">
-        <div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-3xl font-bold">React Record Webcam demo</h1>
+      <div className="space-y-2 my-4">
+        <div className="flex">
           <h4>Select video input</h4>
-          <select className="input-select" onChange={handleSelect}>
-            {devicesByType?.video?.map((device) => (
-              <option key={device.deviceId} data-deviceid={device.deviceId}>
-                {device.label}
-              </option>
-            ))}
-          </select>
+          <Select
+            items={devicesByType?.video || []}
+            dataset="deviceid"
+            onChange={handleSelect}
+          />
         </div>
-        <div>
+        <div className="flex">
           <h4>Select audio input</h4>
-          <select className="input-select" onChange={handleSelect}>
-            {devicesByType?.audio?.map((device) => (
-              <option key={device.deviceId} data-deviceid={device.deviceId}>
-                {device.label}
-              </option>
-            ))}
-          </select>
+          <Select
+            items={devicesByType?.audio || []}
+            dataset="deviceid"
+            onChange={handleSelect}
+          />
         </div>
       </div>
-      <div className="input-start">
-        <button onClick={quickDemo}>Record 3s video</button>
-        <button onClick={start}>Open camera</button>
-        <button onClick={() => clearAllRecordings()}>Clear all</button>
-        <button onClick={() => clearError()}>Clear error</button>
+      <div className="space-x-2">
+        <Button onClick={quickDemo}>Record 3s video</Button>
+        <Button onClick={start}>Open camera</Button>
+        <Button onClick={() => clearAllRecordings()}>Clear all</Button>
+        <Button onClick={() => clearError()}>Clear error</Button>
       </div>
-
-      <div>
-        <p>{errorMessage ? errorMessage : ''}</p>
+      <div className="my-2">
+        <p>{errorMessage ? `Error: ${errorMessage}` : ''}</p>
       </div>
-      <div className="recordings">
+      <div className="grid grid-cols-custom gap-4 my-4">
         {activeRecordings?.map((recording) => (
-          <div className="recording" key={recording.id}>
-            <div className="recording-info">
+          <div className="bg-white rounded-lg px-4 py-4" key={recording.id}>
+            <div className="text-black grid grid-cols-1">
               <p>Live</p>
               <small>Status: {recording.status}</small>
               <small>Video: {recording.videoLabel}</small>
               <small>Audio: {recording.audioLabel}</small>
             </div>
             <video ref={recording.webcamRef} loop autoPlay playsInline />
-            <div className="controls">
-              <button
+            <div className="space-x-1 space-y-1 my-2">
+              <Button
+                inverted
                 disabled={
                   recording.status === 'RECORDING' ||
                   recording.status === 'PAUSED'
@@ -109,12 +108,14 @@ export function App() {
                 onClick={() => startRecording(recording.id)}
               >
                 Record
-              </button>
-              <button
+              </Button>
+              <Button
+                inverted
                 disabled={
                   recording.status !== 'RECORDING' &&
                   recording.status !== 'PAUSED'
                 }
+                toggled={recording.status === 'PAUSED'}
                 onClick={() =>
                   recording.status === 'PAUSED'
                     ? resumeRecording(recording.id)
@@ -122,31 +123,38 @@ export function App() {
                 }
               >
                 {recording.status === 'PAUSED' ? 'Resume' : 'Pause'}
-              </button>
-              <button
-                className={recording.isMuted ? 'selected' : ''}
+              </Button>
+              <Button
+                inverted
+                toggled={recording.isMuted}
                 onClick={() => muteRecording(recording.id)}
               >
                 Mute
-              </button>
-              <button
-                disabled={recording.status !== 'RECORDING'}
-                onClick={() => stopRecording(recording.id)}
-              >
+              </Button>
+              <Button inverted onClick={() => stopRecording(recording.id)}>
                 Stop
-              </button>
-              <button onClick={() => cancelRecording(recording.id)}>
+              </Button>
+              <Button inverted onClick={() => cancelRecording(recording.id)}>
                 Cancel
-              </button>
+              </Button>
             </div>
-            <div className="preview">
+
+            <div
+              className={`${
+                recording.previewRef.current?.src.startsWith('blob:')
+                  ? 'visible'
+                  : 'hidden'
+              }`}
+            >
               <p>Preview</p>
               <video ref={recording.previewRef} autoPlay loop playsInline />
-              <div className="controls">
-                <button onClick={() => download(recording.id)}>Download</button>
-                <button onClick={() => clearPreview(recording.id)}>
+              <div className="space-x-2 my-2">
+                <Button inverted onClick={() => download(recording.id)}>
+                  Download
+                </Button>
+                <Button inverted onClick={() => clearPreview(recording.id)}>
                   Clear preview
-                </button>
+                </Button>
               </div>
             </div>
           </div>
