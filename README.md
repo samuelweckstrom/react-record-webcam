@@ -5,101 +5,139 @@
 <br>
 
 [![TypeScript](https://badges.frapsoft.com/typescript/code/typescript.svg?v=101)](https://github.com/ellerbrock/typescript-badges/)
-[![Tests](https://github.com/samuelweckstrom/react-record-webcam/actions/workflows/tests.yaml/badge.svg)](https://github.com/samuelweckstrom/react-record-webcam/actions/workflows/tests.yaml)
+[![Tests](https://github.com/samuelweckstrom/react-record-webcam/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/samuelweckstrom/react-record-webcam/actions/workflows/ci-cd.yaml)
 [![npm version](https://badge.fury.io/js/react-record-webcam.svg)](https://www.npmjs.com/package/react-record-webcam)
 
-Promise based zero dependency webcam library for React. Select video and audio input for one or multiple concurrent recordings using any mix of video and audio source.
+React Record Webcam is a promise-based, zero-dependency webcam library for React, enabling the selection of video and audio inputs for single or multiple concurrent recordings with any mix of video and audio sources.
 
-[DEMO](https://codesandbox.io/p/sandbox/festive-mccarthy-zhkh83)
+[Demo](https://samuel.weckstrom.xyz/react-record-webcam/)
 
-Note version 1.0 is a complete rewrite so you will need to make some changes if updating.
+[Try the example on StackBlitz](https://stackblitz.com/~/github.com/samuelweckstrom/react-record-webcam)
 
 <br>
 
 ## Add package
 
-```
+```bash
 npm i react-record-webcam
 ```
 
 <br>
 
-## Usage
+## Quick Start
 
-```javascript
-// record a 3s. video
+To start recording, create a recording instance using `createRecording` and manage the recording process with the hook's methods:
 
+```typescript
 import { useRecordWebcam } from 'react-record-webcam'
 
-...
+const App = () => {
+  const { createRecording, openCamera, startRecording, stopRecording, downloadRecording } = useRecordWebcam()
 
-  const {
-    activeRecordings,
-    createRecording,
-    openCamera,
-    startRecording,
-    stopRecording,
-  } = useRecordWebcam()
-
-  const example = async () => {
-    try {
-      const recording = await createRecording();
-      if (!recording) return;
-      await openCamera(recording.id);
-      await startRecording(recording.id);
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      await stopRecording(recording.id);
-    } catch (error) {
-      console.error({ error });
-    }
+  const recordVideo = async () => {
+    const recording = await createRecording();
+    await openCamera(recording.id);
+    await startRecording(recording.id);
+    await new Promise(resolve => setTimeout(resolve, 3000)); // Record for 3 seconds
+    await stopRecording(recording.id);
+    await downloadRecording(recording.id); // Download the recording
   };
 
-  return (
-    <div>
-      <button onClick={example}>Start</button>
-      {activeRecordings.map(recording => (
-        <div key={recording.id}>
-          <video ref={recording.webcamRef} autoPlay muted />
-          <video ref={recording.previewRef} autoPlay muted loop />
-        </div>
-      ))}
-    </div>
-  )
-
-...
-
+  return <button onClick={recordVideo}>Record Video</button>;
+};
 ```
-
-Check the CodeSandbox links for [above demo](https://codesandbox.io/p/sandbox/lingering-haze-sm6jxw) and one with more [features](https://codesandbox.io/p/sandbox/festive-mccarthy-zhkh83).
 
 <br>
 
-## Passing options
+## Usage and Examples
+
+Each method in the hook always returns an updated instance of a recording. Pass the `id` of the recording instance to any of the methods from the hook to open camera, start, pause or stop a recording:
+
+Heres an example of uploading the recorded blob to a back-end service:
+
+```typescript
+const { createRecording, openCamera, startRecording, stopRecording } = useRecordWebcam()
+
+
+async function record() {
+    const recording = await createRecording();
+
+    await openCamera(recording.id);
+    await startRecording(recording.id);
+    await new Promise((resolve) => setTimeout(resolve, 3000)); // Record for 3 seconds
+    const recorded = await stopRecording(recording.id);
+
+    // Upload the blob to a back-end
+    const formData = new FormData();
+    formData.append('file', recorded.blob, 'recorded.webm');
+
+    const response = await fetch('https://your-backend-url.com/upload', {
+        method: 'POST',
+        body: formData,
+    });
+};
+```
+
+All recording instances are available in `activeRecordings`. You can for example access refs for webcam feed and recording preview in your component:
+
+```typescript
+const { activeRecordings } = useRecordWebcam()
+
+...
+
+  {activeRecordings.map(recording => (
+    <div key={recording.id}>
+      <video ref={recording.webcamRef} autoPlay />
+      <video ref={recording.previewRef} autoPlay loop />
+    </div>
+  ))}
+```
+
+### Recording instance
+
+| Property | Type | Description |
+| --- | --- | --- |
+| `id` | `string` | The ID of the recording. |
+| `audioId` | `string` | The ID of the audio device. |
+| `audioLabel` | `string` | The label of the audio device. |
+| `blob` | `Blob` | The blob of the recording. |
+| `blobChunks` | `Blob[]` | Single blob or chunks per timeslice of the recording. |
+| `fileName` | `string` | The name of the file. |
+| `fileType` | `string` | The type of the file. |
+| `isMuted` | `boolean` | Whether the recording is muted. |
+| `mimeType` | `string` | The MIME type of the recording. |
+| `objectURL` | `string` \| `null` | The object URL of the recording. |
+| `previewRef` | `React.RefObject<HTMLVideoElement>` | React Ref for the preview element. |
+| `recorder` | `MediaRecorder` | The [MediaRecorder](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder) instance of the recording. |
+| `status` | `'INITIAL'` \| `'CLOSED'` \| `'OPEN'` \| `'RECORDING'` \| `'STOPPED'` \| `'ERROR'` \| `'PAUSED'` | The status of the recording. |
+| `videoId` | `string` | The ID of the video device. |
+| `videoLabel` | `string` | The label of the video device. |
+| `webcamRef` | `React.RefObject<HTMLVideoElement>` | React Ref for the webcam element. |
+
+<br>
+
+## Configuring options
 
 Pass options either when initializing the hook or at any point in your application logic using `applyOptions`.
 
 ```typescript
-const options = { ... }
-const mediaRecorderOptions = { ... }
-const mediaTrackConstraints =  { ... }
+// At initialization
+const { applyOptions, applyConstraints } = useRecordWebcam({
+  options: { fileName: 'custom-name', fileType: 'webm', timeSlice: 1000 },
+  mediaRecorderOptions: { mimeType: 'video/webm; codecs=vp8' },
+  mediaTrackConstraints: { video: true, audio: true }
+});
 
-const { ... } = useRecordWebcam({ 
-  options, 
-  mediaRecorderOptions, 
-  mediaTrackConstraints
-})
-
-// or
-
-const { applyOptions } = useRecordWebcam() // use utility
-applyOptions(recording.id: string, options: Options) // add to your application logic
-
-
+// Dynamically applying options
+applyOptions(recording.id, { fileName: 'updated-name' }); // Update file name
+applyConstraints(recording.id, { aspectRatio: 0.56 }) // Change aspect ratio to portrait
 ```
+
+### List of options
 
 | Option | property | default value|
 | ------------- | ------------- | ------------- |
-|`fileName`|  |`Date.now()`|
+|`fileName`| File name |`Date.now()`|
 |`fileType`| File type for download (will override inferred type from `mimeType`)  |`'webm'`|
 |`timeSlice`| Recording interval | `undefined`|
 
@@ -111,21 +149,31 @@ Both `mediaRecorderOptions` and `mediatrackConstraints` mirror the official API.
 
 [MDN: mediatrackConstraints](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints#instance_properties)
 
-### Codec Support
+<br>
 
-The default codec is set to `video/webm;codecs=vp9`. If you prefer to use another one, you can check the compatibility for playback and recording with the following utilities:
+## Codec Support
+
+A codec supported by the current browser will be detected and used for recordings.
+
+To see all video and audio codecs supported by the browser:
+
+```typescript
+const { supportedAudioCodecs, supportedVideoCodecs } = useRecordWebcam();
+
+console.log({ supportedAudioCodecs, supportedVideoCodecs })
+```
+
+To check the support of a specific codec:
 
 ```typescript
 const { checkCodecRecordingSupport, checkVideoCodecPlaybackSupport } = useRecordWebcam()
 
-...
 const codec = 'video/x-matroska;codecs=avc1'
 const isRecordingSupported = checkCodecRecordingSupport(codec)
 const isPlayBackSupported = checkVideoCodecPlaybackSupport(codec)
-...
 ```
 
-To use a specific codec, pass this in the mediaRecorderOptions:
+To use a specific codec, pass this in the mediaRecorderOptions. Note that MediaRecorder uses a mimeType format for the codec: `<container>;codec=<videoCodec>,<audioCodec>`
 
 ```typescript
 const codec = 'video/webm;codecs=h264'
@@ -135,23 +183,25 @@ const recordWebcam = useRecordWebcam({ mediaRecorderOptions })
 
 For more info see the codec guide on [MDN](https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs).
 
+<br>
+
 ## Error handling
 
-Current error message is passed from the hook, along with a object of error states which you can use for checks.
+Error messages are available in the hook. You can import the constant of all messages for error handling from the package.
 
 ```typescript
-import { useRecordWebcam, ERROR_MESSAGES } from 'react-record-webcam'
+import { useRecordWebcam, ERROR_MESSAGES } from 'react-record-webcam';
 
-const { errorMessage } = useRecordWebcam()
+const { errorMessage } = useRecordWebcam();
 
-...
-const isUserPermissionDenied = errorMessage === ERROR_MESSAGES.NO_USER_PERMISSION;
-...
+if (errorMessage === ERROR_MESSAGES.NO_USER_PERMISSION) {
+  // Handle specific error scenario
+}
 ```
 
 <br>
 
-## Full API
+## API Reference
 
 | Method/Property              | Arguments                                                     | Returns                                      | Description                                                                                                       |
 |------------------------------|---------------------------------------------------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
@@ -174,7 +224,7 @@ const isUserPermissionDenied = errorMessage === ERROR_MESSAGES.NO_USER_PERMISSIO
 | `resumeRecording`            | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Resumes a paused recording.                                                                                       |
 | `startRecording`             | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Starts a new recording session.                                                                                   |
 | `stopRecording`              | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Stops the current recording session.                                                                              |
-                                                                           |
+|
 
 ## License
 
