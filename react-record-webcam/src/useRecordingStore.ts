@@ -1,6 +1,7 @@
 import { createRef } from 'react';
 
 import { createStore, useStore } from './store';
+import { defaultCodec } from './codec';
 
 export const ERROR_MESSAGES = {
   CODEC_NOT_SUPPORTED: 'CODEC_NOT_SUPPORTED',
@@ -109,7 +110,7 @@ export function createRecording({
     fileName: String(new Date().getTime()),
     fileType: 'webm',
     isMuted: false,
-    mimeType: 'video/webm;codecs=vp9',
+    mimeType: defaultCodec,
     objectURL: null,
     previewRef: createRef(),
     recorder: null,

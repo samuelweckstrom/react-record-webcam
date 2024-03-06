@@ -8,11 +8,12 @@ import {
   useRecordingStore,
 } from './useRecordingStore';
 import { type Options } from './useRecordWebcam';
+import { defaultCodec } from './codec';
 
 const DEFAULT_RECORDER_OPTIONS: MediaRecorderOptions = {
   audioBitsPerSecond: 128000,
   videoBitsPerSecond: 2500000,
-  mimeType: 'video/webm;codecs=vp9',
+  mimeType: defaultCodec,
 } as const;
 
 export type UseRecorder = {
