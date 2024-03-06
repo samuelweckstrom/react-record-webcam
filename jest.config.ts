@@ -10,10 +10,7 @@ module.exports = {
   testMatch: [
     '<rootDir>/react-record-webcam/src/__tests__/?(*.)+(spec|test).ts?(x)',
   ],
-  setupFilesAfterEnv: [
-    '@testing-library/jest-dom',
-    '<rootDir>/react-record-webcam/src/__tests__/mocks/browser.mock.ts',
-  ],
+  setupFilesAfterEnv: ['@testing-library/jest-dom', '<rootDir>/setupTests.ts'],
   testEnvironment: 'jsdom',
   transform: {
     '^.+\\.ts?$': [

@@ -1,6 +1,35 @@
-import { STATUS } from '../../useRecordingStore';
-import { audio, video } from './device.mock';
-import { mockRecording } from './recording.mock';
+const {
+  audio,
+  video,
+} = require('./react-record-webcam/src/__tests__/mocks/device.mock');
+
+const STATUS = {
+  INITIAL: 'INITIAL',
+  CLOSED: 'CLOSED',
+  OPEN: 'OPEN',
+  RECORDING: 'RECORDING',
+  STOPPED: 'STOPPED',
+  ERROR: 'ERROR',
+  PAUSED: 'PAUSED',
+} as const;
+
+const mockRecording = {
+  id: `${video[0].deviceId}-${audio[0].deviceId}`,
+  audioId: audio[0].deviceId,
+  audioLabel: audio[0].label,
+  blobChunks: null,
+  fileName: String(new Date().getTime()),
+  fileType: 'webm',
+  isMuted: false,
+  mimeType: 'video/webm;codecs=vp9',
+  objectURL: null,
+  previewRef: { current: null },
+  recorder: null,
+  status: STATUS.INITIAL,
+  videoId: video[0].deviceId,
+  videoLabel: video[0].label,
+  webcamRef: { current: null },
+};
 
 const mockMediaDevices = {
   getUserMedia: jest.fn().mockResolvedValue({
@@ -70,7 +99,6 @@ class MockMediaRecorder {
 
   start(timeslice: number) {
     this.state = 'recording';
-    // Optionally, simulate a timeslice-based dataavailable event
     if (timeslice) {
       setTimeout(() => {
         if (this.ondataavailable) {
@@ -90,7 +118,6 @@ class MockMediaRecorder {
     if (this.onstop) {
       this.onstop();
     }
-    // Simulate data availability at stop
     if (this.ondataavailable) {
       this.ondataavailable({
         data: new Blob(['data'], { type: this.mimeType }),
@@ -113,7 +140,6 @@ class MockMediaRecorder {
   }
 
   requestData() {
-    // Simulate immediate data availability
     if (this.ondataavailable) {
       this.ondataavailable({
         data: new Blob(['data'], { type: this.mimeType }),
@@ -126,10 +152,6 @@ Object.defineProperty(global, 'MediaRecorder', {
   value: MockMediaRecorder,
   writable: true,
 });
-
-const URL = {
-  createObjectURL: (obj: MediaSource | Blob) => 'test-url-string',
-};
 
 Object.defineProperty(global, 'URL', {
   value: URL,
