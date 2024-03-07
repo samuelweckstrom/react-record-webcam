@@ -368,6 +368,7 @@ export function useRecorder({
       if (recording.previewRef.current) recording.previewRef.current.src = '';
       recording.status = STATUS.INITIAL;
       URL.revokeObjectURL(<string>recording.objectURL);
+      recording.blobChunks = [];
       const updatedRecording = await updateRecording(recording.id, recording);
       return updatedRecording;
     } catch (error) {
