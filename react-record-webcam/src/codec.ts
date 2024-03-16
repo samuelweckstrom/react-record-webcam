@@ -4,6 +4,7 @@
  * @returns {boolean} - Whether the codec is supported
  */
 export function checkRecordingCodecSupport(codec: string): boolean {
+  if (typeof MediaRecorder === 'undefined') return false;
   return MediaRecorder.isTypeSupported(codec);
 }
 
@@ -75,7 +76,10 @@ function getSupportedMediaFormats(
     (acc, container) => {
       codecs.forEach((codec) => {
         const mimeType = `${type}/${container};codecs=${codec}`;
-        if (MediaRecorder.isTypeSupported(mimeType)) {
+        if (
+          typeof MediaRecorder !== 'undefined' &&
+          MediaRecorder.isTypeSupported(mimeType)
+        ) {
           acc.mimeType.push(mimeType);
           acc.codec.push(codec);
           acc.container.push(container);
