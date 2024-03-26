@@ -51,7 +51,6 @@ export type UseRecordWebcam = {
   UseRecorder;
 
 const isDevMode = false;
-let isInit = false;
 
 /**
  * React Record Webcam hook.
@@ -113,13 +112,10 @@ export function useRecordWebcam({
   }
 
   useEffect(() => {
-    if (!isInit) {
-      isInit = true;
-      init();
-    }
+    init();
     return () => {
       clearAllRecordings();
-      isInit = false;
+      console.log('** cleanup **');
     };
   }, []);
 
