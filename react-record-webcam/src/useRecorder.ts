@@ -240,6 +240,7 @@ export function useRecorder({
               type: recording.mimeType,
             });
             const url = URL.createObjectURL(blob);
+            recording.blob = blob;
             recording.objectURL = url;
 
             if (recording.previewRef.current) {
