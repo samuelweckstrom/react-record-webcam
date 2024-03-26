@@ -82,8 +82,6 @@ export type Devices = {
   initialDevices: InitialDevices;
 };
 
-let isInit = false;
-
 export async function getDevices(): Promise<Devices> {
   let devicesByType: ByType = {
     video: [],
@@ -95,11 +93,8 @@ export async function getDevices(): Promise<Devices> {
     audio: null,
   };
 
-  if (typeof window !== 'undefined' && isInit === false) {
-    isInit = true;
-
+  if (typeof window !== 'undefined') {
     const mediaDevices = await getUserPermission();
-
     devicesById = byId(mediaDevices);
     devicesByType = byType(mediaDevices);
     initialDevices = {
