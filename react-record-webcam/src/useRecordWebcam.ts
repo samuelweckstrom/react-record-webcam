@@ -115,7 +115,6 @@ export function useRecordWebcam({
     init();
     return () => {
       clearAllRecordings();
-      console.log('** cleanup **');
     };
   }, []);
 
