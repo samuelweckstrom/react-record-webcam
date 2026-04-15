@@ -1,85 +1,63 @@
-import {
-  type Dispatch,
-  type SetStateAction,
-  useCallback,
-  useMemo,
-  useState,
-} from 'react';
+import { useSyncExternalStore } from 'react';
 
-type Store<K extends string | number | symbol, V> = Map<K, V> | Record<K, V>;
+type Listener = () => void;
 
-type Callback<V> = {
-  set?: (value: V) => void;
-  get?: (key: keyof Store<string | number | symbol, V>) => V;
-  delete?: (key: keyof Store<string | number | symbol, V>) => void;
-  clear?: () => void;
-};
+export class ExternalStore<V> {
+  private map = new Map<string, V>();
+  private listeners = new Set<Listener>();
+  private _snapshot: V[] = [];
 
-type ProxiedMap<K, V> = {
-  get: (key: K) => V | undefined;
-  set: (key: K, value: V, shouldUpdate: boolean) => V;
-  clear: (shouldUpdate: boolean) => void;
-  delete: (key: K, shouldUpdate: boolean) => void;
-  values: () => V[];
-  entries: () => [K, V][];
-  has: (key: K) => boolean;
-  keys: () => K[];
-  size: number;
-};
-
-export function createStore<K extends string | number | symbol, V>(
-  store: Map<K, V> | Record<K, V>
-): (
-  stateUpdater: Dispatch<SetStateAction<number>>,
-  callbacks?: Partial<Callback<V>>
-) => ProxiedMap<K, V> {
-  return (
-    stateUpdater: Dispatch<SetStateAction<number>>,
-    callbacks?: Partial<Callback<V>>
-  ) => {
-    return new Proxy(store, {
-      get(target: Map<K, V>, prop: string, receiver: any) {
-        if (prop === 'size') {
-          return target.size;
-        }
-        const value = Reflect.get(target, prop, receiver);
-        if (value instanceof Function) {
-          return function (...args: (string | boolean)[]) {
-            const result = value.apply(target, args);
-            const shouldTriggerUpdate = args[args.length - 1] === true;
-
-            if (shouldTriggerUpdate) {
-              stateUpdater((prev) => prev + 1);
-            }
-
-            if (prop === 'set') {
-              return result.get(args[0]);
-            }
-
-            if (callbacks && callbacks[prop as keyof Partial<Callback<V>>]) {
-              callbacks[prop as keyof Partial<Callback<V>>]?.(result);
-            }
-            return result;
-          };
-        }
-        return value;
-      },
-    }) as ProxiedMap<K, V>;
+  subscribe = (listener: Listener): (() => void) => {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
   };
+
+  getSnapshot = (): V[] => {
+    return this._snapshot;
+  };
+
+  private emit(): void {
+    this._snapshot = Array.from(this.map.values());
+    for (const listener of this.listeners) {
+      listener();
+    }
+  }
+
+  get(key: string): V | undefined {
+    return this.map.get(key);
+  }
+
+  set(key: string, value: V): V {
+    this.map.set(key, value);
+    this.emit();
+    return value;
+  }
+
+  delete(key: string): void {
+    this.map.delete(key);
+    this.emit();
+  }
+
+  clear(): void {
+    this.map.clear();
+    this.emit();
+  }
+
+  has(key: string): boolean {
+    return this.map.has(key);
+  }
+
+  values(): V[] {
+    return this._snapshot;
+  }
+
+  get size(): number {
+    return this.map.size;
+  }
 }
 
-export function useStore<K extends string | number | symbol, V>(
-  store: (
-    updater: Dispatch<SetStateAction<number>>,
-    callbacks?: Partial<Callback<V>>
-  ) => ProxiedMap<K, V>,
-  callbacks?: Partial<Callback<V>>
-): { state: ProxiedMap<K, V> } {
-  const [, forceUpdate] = useState(0);
-  const triggerUpdate = useCallback(() => forceUpdate((prev) => prev + 1), []);
-  const state = useMemo(() => store(triggerUpdate, callbacks), []);
-
-  return {
-    state,
-  };
+export function useExternalStore<V>(store: ExternalStore<V>): V[] {
+  return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
 }

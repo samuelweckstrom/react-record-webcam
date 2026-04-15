@@ -12,7 +12,7 @@ describe('useRecordingStore', () => {
     expect(result.current.activeRecordings).toEqual([]);
   });
 
-  it('should be able to set a recording', () => {
+  it('should be able to set a recording', async () => {
     const recording = {
       videoId: 'testVideoId',
       audioId: 'testAudioId',
@@ -21,8 +21,8 @@ describe('useRecordingStore', () => {
     };
     const { result } = renderHook(() => useRecordingStore());
 
-    act(() => {
-      result.current.setRecording(recording);
+    await act(async () => {
+      await result.current.setRecording(recording);
     });
 
     expect(result.current?.activeRecordings?.length).toBe(1);
@@ -31,21 +31,21 @@ describe('useRecordingStore', () => {
     );
   });
 
-  it('should be able to get a recording by ID', () => {
+  it('should be able to get a recording by ID', async () => {
     const recording = {
       videoId: 'testVideoId',
       audioId: 'testAudioId',
       videoLabel: 'test-video-label',
       audioLabel: 'test-audio-label',
     };
-    const recordingId = `${recording.videoId}-${recording.audioId}`;
     const { result } = renderHook(() => useRecordingStore());
 
-    act(() => {
-      result.current.setRecording(recording);
+    let created: any;
+    await act(async () => {
+      created = await result.current.setRecording(recording);
     });
 
-    const testResult = result.current.getRecording(recordingId);
+    const testResult = result.current.getRecording(created.id);
     expect(testResult.videoLabel).toBe(recording.videoLabel);
   });
 
@@ -57,35 +57,35 @@ describe('useRecordingStore', () => {
     }).toThrow(ERROR_MESSAGES.NO_RECORDING_WITH_ID);
   });
 
-  it('should delete a recording', () => {
+  it('should delete a recording', async () => {
     const recording = {
-      videoId: 'testVideoId',
-      audioId: 'testAudioId',
+      videoId: 'testVideoIdDel',
+      audioId: 'testAudioIdDel',
       videoLabel: 'test-video-label',
       audioLabel: 'test-audio-label',
     };
     const { result } = renderHook(() => useRecordingStore());
-    act(() => {
-      result.current.setRecording(recording);
+
+    let created: any;
+    await act(async () => {
+      created = await result.current.setRecording(recording);
     });
 
-    expect(result.current?.activeRecordings?.length).toBe(1);
+    expect(result.current?.activeRecordings?.length).toBeGreaterThanOrEqual(1);
 
-    act(() => {
-      result.current.deleteRecording(
-        `${recording.videoId}-${recording.audioId}`
-      );
+    await act(async () => {
+      await result.current.deleteRecording(created.id);
     });
 
     expect(() => {
-      result.current.getRecording(`${recording.videoId}-${recording.audioId}`);
+      result.current.getRecording(created.id);
     }).toThrow(ERROR_MESSAGES.NO_RECORDING_WITH_ID);
   });
 
-  it('should cleanup all recordings', () => {
+  it('should cleanup all recordings', async () => {
     const recording1 = {
-      videoId: 'testVideoId',
-      audioId: 'testAudioId',
+      videoId: 'testVideoId1',
+      audioId: 'testAudioId1',
       videoLabel: 'test-video-label',
       audioLabel: 'test-audio-label',
     };
@@ -98,25 +98,23 @@ describe('useRecordingStore', () => {
 
     const { result } = renderHook(() => useRecordingStore());
 
-    act(() => {
-      result.current.setRecording(recording1);
-      result.current.setRecording(recording2);
+    let created1: any;
+    let created2: any;
+    await act(async () => {
+      created1 = await result.current.setRecording(recording1);
+      created2 = await result.current.setRecording(recording2);
     });
 
-    act(() => {
-      result.current.clearAllRecordings();
+    await act(async () => {
+      await result.current.clearAllRecordings();
     });
 
     expect(() => {
-      result.current.getRecording(
-        `${recording1.videoId}-${recording1.audioId}`
-      );
+      result.current.getRecording(created1.id);
     }).toThrow(ERROR_MESSAGES.NO_RECORDING_WITH_ID);
 
     expect(() => {
-      result.current.getRecording(
-        `${recording2.videoId}-${recording2.audioId}`
-      );
+      result.current.getRecording(created2.id);
     }).toThrow(ERROR_MESSAGES.NO_RECORDING_WITH_ID);
   });
 });

@@ -17,15 +17,19 @@ const mockRecording = {
   id: `${video[0].deviceId}-${audio[0].deviceId}`,
   audioId: audio[0].deviceId,
   audioLabel: audio[0].label,
+  audioOnly: false,
   blobChunks: null,
   fileName: String(new Date().getTime()),
   fileType: 'webm',
   isMuted: false,
   mimeType: 'video/webm;codecs=vp9',
   objectURL: null,
+  pausedAt: null,
   previewRef: { current: null },
   recorder: null,
+  startedAt: null,
   status: STATUS.INITIAL,
+  totalPausedMs: 0,
   videoId: video[0].deviceId,
   videoLabel: video[0].label,
   webcamRef: { current: null },
@@ -51,10 +55,19 @@ const mockMediaDevices = {
     ]),
   }),
   enumerateDevices: jest.fn().mockResolvedValue([...audio, ...video]),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
 };
 
 Object.defineProperty(global.navigator, 'mediaDevices', {
   value: mockMediaDevices,
+  writable: true,
+});
+
+Object.defineProperty(global.navigator, 'permissions', {
+  value: {
+    query: jest.fn().mockResolvedValue({ state: 'granted' }),
+  },
   writable: true,
 });
 

@@ -1,15 +1,16 @@
 export async function startStream(
-  videoId: string,
+  videoId: string | undefined,
   audioId: string,
-  constraints: MediaTrackConstraints
+  constraints: MediaTrackConstraints,
+  audioOnly?: boolean
 ): Promise<MediaStream> {
-  const newStream = await navigator.mediaDevices.getUserMedia({
-    video: { deviceId: { exact: videoId } },
-    audio: {
-      deviceId: { exact: audioId },
-    },
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+    throw new Error('getUserMedia is not supported in this environment');
+  }
+  return navigator.mediaDevices.getUserMedia({
+    video: audioOnly
+      ? false
+      : { ...(videoId && { deviceId: { exact: videoId } }), ...constraints },
+    audio: { deviceId: { exact: audioId } },
   });
-  const tracks = newStream.getTracks();
-  tracks.forEach((track) => track.applyConstraints(constraints));
-  return newStream;
 }

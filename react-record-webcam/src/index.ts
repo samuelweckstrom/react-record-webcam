@@ -1,4 +1,10 @@
 export * from './useRecordWebcam';
 export * from './codec';
 export * from './devices';
+export { useCamera } from './useCamera';
+export type { UseCamera, Orientation } from './useCamera';
+export { useRecorder } from './useRecorder';
+export type { UseRecorder } from './useRecorder';
+export { useRecordingTimer } from './useRecordingTimer';
 export { STATUS, ERROR_MESSAGES } from './useRecordingStore';
+export type { Recording, Status, RecordingError } from './useRecordingStore';
