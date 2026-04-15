@@ -2,7 +2,7 @@ import React from 'react';
 
 import { act, renderHook, waitFor } from '@testing-library/react/pure';
 
-import { ERROR_MESSAGES, type Recording, STATUS } from '../useRecordingStore';
+import { type Recording, STATUS } from '../useRecordingStore';
 import {
   UseRecordWebcam,
   useRecordWebcam,
@@ -56,21 +56,20 @@ describe('useRecordWebcam', () => {
   });
 
   it('creates a new recording with default devices', async () => {
-    const videoId = videoDevice[0].deviceId;
-    const audioId = audioDevice[0].deviceId;
-    const recordingId = `${videoId}-${audioId}`;
+    let recording: Recording | undefined;
 
     await act(async () => {
-      await result.current.createRecording();
+      recording = <Recording>await result.current.createRecording();
     });
 
-    expect(result.current.activeRecordings[0].id).toEqual(recordingId);
+    expect(recording?.videoId).toBe(videoDevice[0].deviceId);
+    expect(recording?.audioId).toBe(audioDevice[0].deviceId);
+    expect(recording?.id).toContain(videoDevice[0].deviceId);
   });
 
   it('creates a new recording with passed video and audio IDs', async () => {
     const videoId = videoDevice[1].deviceId;
     const audioId = audioDevice[1].deviceId;
-    const recordingId = `${videoId}-${audioId}`;
     let recording: Recording | undefined;
 
     await act(async () => {
@@ -81,48 +80,69 @@ describe('useRecordWebcam', () => {
 
     expect(recording?.videoId).toBe(videoId);
     expect(recording?.audioId).toBe(audioId);
-    expect(recording?.id).toBe(recordingId);
+    expect(recording?.id).toContain(videoId);
+    expect(recording?.id).toContain(audioId);
   });
 
-  it('prevents a recording for same video and audio id', async () => {
+  it('allows multiple recordings from the same devices', async () => {
     const videoId = videoDevice[1].deviceId;
     const audioId = audioDevice[1].deviceId;
+    let recording1: Recording | undefined;
+    let recording2: Recording | undefined;
 
     await act(async () => {
-      try {
-        await result.current.createRecording(videoId, audioId);
-      } catch (e) {
-        expect(e.message).toBe(ERROR_MESSAGES.SESSION_EXISTS);
-      }
+      recording1 = <Recording>(
+        await result.current.createRecording(videoId, audioId)
+      );
+      recording2 = <Recording>(
+        await result.current.createRecording(videoId, audioId)
+      );
     });
+
+    expect(recording1?.id).not.toBe(recording2?.id);
+    expect(recording1?.videoId).toBe(videoId);
+    expect(recording2?.videoId).toBe(videoId);
   });
 
   it('opens and closes the camera', async () => {
     const videoId = videoDevice[1].deviceId;
     const audioId = audioDevice[1].deviceId;
-    const recordingId = `${videoId}-${audioId}`;
     let recording: Recording | undefined;
+
+    await act(async () => {
+      recording = <Recording>(
+        await result.current.createRecording(videoId, audioId)
+      );
+    });
+
+    const recordingId = recording!.id;
 
     await act(async () => {
       recording = <Recording>await result.current.openCamera(recordingId);
     });
 
     expect(recording?.status).toBe(STATUS.OPEN);
-    expect(result.current.activeRecordings[1].status).toBe(STATUS.OPEN);
 
     await act(async () => {
       recording = <Recording>await result.current.closeCamera(recordingId);
     });
 
     expect(recording?.status).toBe(STATUS.CLOSED);
-    expect(result.current.activeRecordings[1].status).toBe(STATUS.CLOSED);
   });
 
   it('throws error with unsupported codec', async () => {
     const videoId = videoDevice[1].deviceId;
     const audioId = audioDevice[1].deviceId;
-    const recordingId = `${videoId}-${audioId}`;
     const codec = 'test-codec-unsupported';
+    let recording: Recording | undefined;
+
+    await act(async () => {
+      recording = <Recording>(
+        await result.current.createRecording(videoId, audioId)
+      );
+    });
+
+    const recordingId = recording!.id;
 
     rerender({
       mediaRecorderOptions: { mimeType: codec },
@@ -134,7 +154,7 @@ describe('useRecordWebcam', () => {
         await result.current.startRecording(recordingId);
       } catch (e) {
         expect(e.message).toBe(
-          `${ERROR_MESSAGES.CODEC_NOT_SUPPORTED} ${codec}`
+          `${codec}`
         );
       }
     });
@@ -151,7 +171,6 @@ describe('useRecordWebcam', () => {
   it('creates a recording, starts it, pauses, resumes, stops and closes camera', async () => {
     const videoId = videoDevice[1].deviceId;
     const audioId = audioDevice[1].deviceId;
-    const recordingId = `${videoId}-${audioId}`;
     let recording: Recording | undefined;
 
     rerender();
@@ -162,9 +181,10 @@ describe('useRecordWebcam', () => {
       );
     });
 
+    const recordingId = recording!.id;
+
     expect(recording?.videoId).toBe(videoId);
     expect(recording?.audioId).toBe(audioId);
-    expect(recording?.id).toBe(recordingId);
     expect(recording?.recorder).toBeDefined();
 
     await act(async () => {
@@ -199,7 +219,6 @@ describe('useRecordWebcam', () => {
       expect(recording?.status).toBe(STATUS.RECORDING);
     });
 
-    // TODO: figure out a way to test the MediaRecorder onstop method
     if (recording?.recorder?.onstop) {
       result.current.stopRecording = jest.fn().mockResolvedValue({
         ...mockRecording,

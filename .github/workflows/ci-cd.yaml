@@ -10,12 +10,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-      - run: npm ci
-      - run: npm test
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
@@ -24,17 +28,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm install
+        run: pnpm install --frozen-lockfile
       - name: Build package
-        run: npm run build:package
+        run: pnpm run build:package
       - name: Build demo
-        run: npm run build:demo
+        run: pnpm run build:demo
 
       - name: Deploy to S3
         uses: jakejarvis/s3-sync-action@v0.5.1

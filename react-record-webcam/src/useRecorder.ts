@@ -1,9 +1,18 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
+
+function isIOSDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
 
 import { type Devices } from './devices';
 import {
   ERROR_MESSAGES,
   type Recording,
+  type Status,
   STATUS,
   useRecordingStore,
 } from './useRecordingStore';
@@ -14,92 +23,25 @@ const DEFAULT_RECORDER_OPTIONS: MediaRecorderOptions = {
   audioBitsPerSecond: 128000,
   videoBitsPerSecond: 2500000,
   mimeType: defaultCodec,
-} as const;
+};
 
 export type UseRecorder = {
-  /**
-   * Array of active recordings.
-   */
   activeRecordings: Recording[];
-
-  /**
-   * Clears all active recordings.
-   * @returns A promise that resolves when all recordings are cleared.
-   */
   clearAllRecordings: () => Promise<void>;
-
-  /**
-   * Applies recording options to a specific recording.
-   * @param {string} recordingId - The ID of the recording.
-   * @returns {Promise<Recording | void>} - A promise that resolves to a Recording object or void.
-   */
   applyRecordingOptions: (recordingId: string) => Promise<Recording | void>;
-
-  /**
-   * Cancels the current recording session.
-   * @param recordingId The ID of the recording to cancel.
-   * @returns A promise that resolves when the recording is canceled.
-   */
   cancelRecording: (recordingId: string) => Promise<void>;
-
-  /**
-   * Clears the preview of a specific recording.
-   * @param {string} recordingId - The ID of the recording.
-   * @returns {Promise<Recording | void>} - A promise that resolves to a Recording object or void.
-   */
   clearPreview: (recordingId: string) => Promise<Recording | void>;
-
-  /**
-   * Downloads a specific recording.
-   * @param {string} recordingId - The ID of the recording.
-   * @returns {Promise<void>} - A promise that resolves when the download is complete.
-   */
   download: (recordingId: string) => Promise<void>;
-
-  /**
-   * Pauses the current recording.
-   * @param recordingId The ID of the recording to pause.
-   * @returns A promise that resolves with the updated recording, or void if an error occurs.
-   */
+  getBlob: (recordingId: string) => Blob | undefined;
   pauseRecording: (recordingId: string) => Promise<Recording | void>;
-
-  /**
-   * Resumes a paused recording.
-   * @param recordingId The ID of the recording to resume.
-   * @returns A promise that resolves with the updated recording, or void if an error occurs.
-   */
   resumeRecording: (recordingId: string) => Promise<Recording | void>;
-
-  /**
-   * Starts a new recording session.
-   * @param recordingId The ID for the new recording session.
-   * @returns A promise that resolves with the new recording, or void if an error occurs.
-   */
   startRecording: (recordingId: string) => Promise<Recording | void>;
-
-  /**
-   * Stops the current recording session.
-   * @param recordingId The ID of the recording to stop.
-   * @returns A promise that resolves with the stopped recording, or void if an error occurs.
-   */
   stopRecording: (recordingId: string) => Promise<Recording | void>;
-
-  /**
-   * Mutes or unmutes the recording audio.
-   * @param recordingId The ID of the recording to mute or unmute.
-   * @returns A promise that resolves with the updated recording, or void if an error occurs.
-   */
   muteRecording: (recordingId: string) => Promise<Recording | void>;
-
-  /**
-   * Creates a new recording session with specified video and audio sources.
-   * @param videoId The ID of the video source device.
-   * @param audioId The ID of the audio source device.
-   * @returns A promise that resolves with the created recording, or void if an error occurs.
-   */
   createRecording: (
     videoId?: string,
-    audioId?: string
+    audioId?: string,
+    options?: { audioOnly?: boolean }
   ) => Promise<Recording | void>;
 };
 
@@ -108,298 +50,367 @@ export function useRecorder({
   options,
   devices,
   handleError,
+  onStatusChange,
+  onDataAvailable,
 }: {
   mediaRecorderOptions?: MediaRecorderOptions;
   options?: Partial<Options>;
   devices?: Devices;
-  handleError: (functionName: string, error: unknown) => void;
+  handleError: (functionName: string, error: unknown, recordingId?: string) => void;
+  onStatusChange?: (recordingId: string, oldStatus: Status, newStatus: Status) => void;
+  onDataAvailable?: (recordingId: string, chunk: Blob) => void;
 }): UseRecorder {
   const {
     activeRecordings,
     clearAllRecordings,
     deleteRecording,
     getRecording,
-    isRecordingCreated,
     setRecording,
     updateRecording,
   } = useRecordingStore();
 
+  const maxDurationTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+
   const recorderOptions: MediaRecorderOptions = useMemo(
-    () => ({
-      ...DEFAULT_RECORDER_OPTIONS,
-      ...mediaRecorderOptions,
-    }),
+    () => ({ ...DEFAULT_RECORDER_OPTIONS, ...mediaRecorderOptions }),
     [mediaRecorderOptions]
   );
 
-  const startRecording = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      const stream = <MediaStream>recording.webcamRef.current?.srcObject;
-      recording.mimeType = recorderOptions.mimeType || recording.mimeType;
-      const isCodecSupported = MediaRecorder.isTypeSupported(
-        recording.mimeType
-      );
-
-      if (!isCodecSupported) {
-        console.warn('Codec not supported: ', recording.mimeType);
-        handleError('startRecording', ERROR_MESSAGES.CODEC_NOT_SUPPORTED);
+  const setStatus = useCallback(
+    (recording: Recording, newStatus: Status) => {
+      const oldStatus = recording.status;
+      recording.status = newStatus;
+      if (oldStatus !== newStatus) {
+        onStatusChange?.(recording.id, oldStatus, newStatus);
       }
+    },
+    [onStatusChange]
+  );
 
-      recording.recorder = new MediaRecorder(stream, recorderOptions);
+  const clearMaxDurationTimer = useCallback((recordingId: string) => {
+    const timer = maxDurationTimers.current.get(recordingId);
+    if (timer) {
+      clearTimeout(timer);
+      maxDurationTimers.current.delete(recordingId);
+    }
+  }, []);
 
-      return await new Promise((resolve) => {
-        if (recording.recorder) {
-          recording.recorder.ondataavailable = (event: BlobEvent) => {
-            if (event.data.size) {
-              recording.blobChunks.push(event.data);
-            }
-          };
-          recording.recorder.onstart = async () => {
-            recording.status = STATUS.RECORDING;
-            const updated = await updateRecording(recording.id, recording);
-            resolve(updated);
-          };
-          recording.recorder.onerror = (error: Event) => {
-            if (recordingId) {
-              const recording = getRecording(recordingId);
-              if (recording) recording.status = STATUS.ERROR;
-            }
-            handleError('startRecording', error);
-          };
-          recording.recorder?.start(options?.timeSlice);
+  const stopRecording = useCallback(
+    async (recordingId: string): Promise<Recording | void> => {
+      try {
+        const recording = getRecording(recordingId);
+        clearMaxDurationTimer(recordingId);
+        recording.recorder?.stop();
+
+        return await new Promise((resolve) => {
+          if (recording.recorder) {
+            recording.recorder.onstop = async () => {
+              setStatus(recording, STATUS.STOPPED);
+              const blob = new Blob(recording.blobChunks, {
+                type: recording.mimeType,
+              });
+              const url = URL.createObjectURL(blob);
+              recording.blob = blob;
+              recording.objectURL = url;
+
+              if (recording.previewRef.current) {
+                recording.previewRef.current.src = url;
+              }
+              const updated = await updateRecording(recording.id, recording);
+              resolve(updated);
+            };
+          }
+        });
+      } catch (error) {
+        try {
+          const recording = getRecording(recordingId);
+          setStatus(recording, STATUS.ERROR);
+        } catch { /* recording may not exist */ }
+        handleError('stopRecording', error, recordingId);
+      }
+    },
+    [getRecording, updateRecording, setStatus, clearMaxDurationTimer, handleError]
+  );
+
+  const startRecording = useCallback(
+    async (recordingId: string): Promise<Recording | void> => {
+      try {
+        const recording = getRecording(recordingId);
+        const stream = recording.webcamRef.current?.srcObject as MediaStream;
+        recording.mimeType = recorderOptions.mimeType || recording.mimeType;
+
+        if (
+          typeof MediaRecorder === 'undefined' ||
+          !MediaRecorder.isTypeSupported(recording.mimeType)
+        ) {
+          handleError('startRecording', ERROR_MESSAGES.CODEC_NOT_SUPPORTED, recordingId);
+          return;
         }
-      });
-    } catch (error) {
-      if (recordingId) {
+
+        recording.recorder = new MediaRecorder(stream, recorderOptions);
+
+        return await new Promise((resolve) => {
+          if (recording.recorder) {
+            recording.recorder.ondataavailable = (event: BlobEvent) => {
+              if (event.data.size) {
+                recording.blobChunks.push(event.data);
+                onDataAvailable?.(recording.id, event.data);
+              }
+            };
+            recording.recorder.onstart = async () => {
+              recording.startedAt = Date.now();
+              recording.totalPausedMs = 0;
+              recording.pausedAt = null;
+              setStatus(recording, STATUS.RECORDING);
+
+              if (options?.maxDuration) {
+                const timer = setTimeout(() => {
+                  stopRecording(recording.id);
+                }, options.maxDuration);
+                maxDurationTimers.current.set(recording.id, timer);
+              }
+
+              const updated = await updateRecording(recording.id, recording);
+              resolve(updated);
+            };
+            recording.recorder.onerror = (error: Event) => {
+              try {
+                const r = getRecording(recordingId);
+                setStatus(r, STATUS.ERROR);
+              } catch { /* recording may not exist */ }
+              handleError('startRecording', error, recordingId);
+            };
+            recording.recorder.start(options?.timeSlice);
+          }
+        });
+      } catch (error) {
+        try {
+          const recording = getRecording(recordingId);
+          setStatus(recording, STATUS.ERROR);
+        } catch { /* recording may not exist */ }
+        handleError('startRecording', error, recordingId);
+      }
+    },
+    [recorderOptions, options?.timeSlice, options?.maxDuration, getRecording, updateRecording, setStatus, stopRecording, onDataAvailable, handleError]
+  );
+
+  const pauseRecording = useCallback(
+    async (recordingId: string): Promise<Recording | void> => {
+      try {
         const recording = getRecording(recordingId);
-        if (recording) recording.status = STATUS.ERROR;
-      }
-      handleError('startRecording', error);
-    }
-  };
-
-  const pauseRecording = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      recording.recorder?.pause();
-      if (recording.recorder?.state === 'paused') {
-        recording.status = STATUS.PAUSED;
-        const updated = await updateRecording(recording.id, recording);
-        return updated;
-      }
-    } catch (error) {
-      if (recordingId) {
-        const recording = getRecording(recordingId);
-        if (recording) recording.status = STATUS.ERROR;
-      }
-      handleError('pauseRecording', error);
-    }
-  };
-
-  const resumeRecording = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      recording.recorder?.resume();
-      if (recording.recorder?.state === 'recording') {
-        recording.status = STATUS.RECORDING;
-        const updated = await updateRecording(recording.id, recording);
-        return updated;
-      }
-    } catch (error) {
-      if (recordingId) {
-        const recording = getRecording(recordingId);
-        if (recording) recording.status = STATUS.ERROR;
-      }
-      if (recordingId) {
-        const recording = getRecording(recordingId);
-        if (recording) recording.status = STATUS.ERROR;
-      }
-      handleError('resumeRecording', error);
-    }
-  };
-
-  const stopRecording = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      recording.recorder?.stop();
-
-      return await new Promise((resolve) => {
-        if (recording.recorder) {
-          recording.recorder.onstop = async () => {
-            recording.status = STATUS.STOPPED;
-            const blob = new Blob(recording.blobChunks, {
-              type: recording.mimeType,
-            });
-            const url = URL.createObjectURL(blob);
-            recording.blob = blob;
-            recording.objectURL = url;
-
-            if (recording.previewRef.current) {
-              recording.previewRef.current.src = url;
-            }
-            const updated = await updateRecording(recording.id, recording);
-            resolve(updated);
-          };
+        recording.recorder?.pause();
+        if (recording.recorder?.state === 'paused') {
+          recording.pausedAt = Date.now();
+          setStatus(recording, STATUS.PAUSED);
+          return await updateRecording(recording.id, recording);
         }
-      });
-    } catch (error) {
-      if (recordingId) {
+      } catch (error) {
+        try {
+          const recording = getRecording(recordingId);
+          setStatus(recording, STATUS.ERROR);
+        } catch { /* recording may not exist */ }
+        handleError('pauseRecording', error, recordingId);
+      }
+    },
+    [getRecording, updateRecording, setStatus, handleError]
+  );
+
+  const resumeRecording = useCallback(
+    async (recordingId: string): Promise<Recording | void> => {
+      try {
         const recording = getRecording(recordingId);
-        if (recording) recording.status = STATUS.ERROR;
+        recording.recorder?.resume();
+        if (recording.recorder?.state === 'recording') {
+          if (recording.pausedAt) {
+            recording.totalPausedMs += Date.now() - recording.pausedAt;
+            recording.pausedAt = null;
+          }
+          setStatus(recording, STATUS.RECORDING);
+          return await updateRecording(recording.id, recording);
+        }
+      } catch (error) {
+        try {
+          const recording = getRecording(recordingId);
+          setStatus(recording, STATUS.ERROR);
+        } catch { /* recording may not exist */ }
+        handleError('resumeRecording', error, recordingId);
       }
-      handleError('stopRecording', error);
-    }
-  };
+    },
+    [getRecording, updateRecording, setStatus, handleError]
+  );
 
-  const muteRecording = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      recording.recorder?.stream.getAudioTracks().forEach((track) => {
-        track.enabled = !track.enabled;
-      });
-      recording.isMuted = !recording.isMuted;
-      return await updateRecording(recording.id, recording);
-    } catch (error) {
-      if (recordingId) {
+  const muteRecording = useCallback(
+    async (recordingId: string): Promise<Recording | void> => {
+      try {
         const recording = getRecording(recordingId);
-        if (recording) recording.status = STATUS.ERROR;
+        recording.recorder?.stream.getAudioTracks().forEach((track) => {
+          track.enabled = !track.enabled;
+        });
+        recording.isMuted = !recording.isMuted;
+        return await updateRecording(recording.id, recording);
+      } catch (error) {
+        try {
+          const recording = getRecording(recordingId);
+          setStatus(recording, STATUS.ERROR);
+        } catch { /* recording may not exist */ }
+        handleError('muteRecording', error, recordingId);
       }
-      handleError('muteRecording', error);
-    }
-  };
+    },
+    [getRecording, updateRecording, setStatus, handleError]
+  );
 
-  const cancelRecording = async (recordingId: string): Promise<void> => {
-    try {
-      const recording = getRecording(recordingId);
-      const tracks = recording?.recorder?.stream.getTracks();
-      recording?.recorder?.stop();
-      tracks?.forEach((track) => track.stop());
-      recording.recorder?.ondataavailable &&
-        (recording.recorder.ondataavailable = null);
-
-      if (recording.webcamRef.current) {
-        const stream = <MediaStream>recording.webcamRef.current.srcObject;
-        stream?.getTracks().forEach((track) => track.stop());
-
-        recording.webcamRef.current.srcObject = null;
-        recording.webcamRef.current.load();
-      }
-      URL.revokeObjectURL(<string>recording.objectURL);
-      await deleteRecording(recording.id);
-    } catch (error) {
-      if (recordingId) {
+  const cancelRecording = useCallback(
+    async (recordingId: string): Promise<void> => {
+      try {
         const recording = getRecording(recordingId);
-        if (recording) recording.status = STATUS.ERROR;
+        clearMaxDurationTimer(recordingId);
+        const tracks = recording?.recorder?.stream.getTracks();
+        recording?.recorder?.stop();
+        tracks?.forEach((track) => track.stop());
+        if (recording.recorder?.ondataavailable) {
+          recording.recorder.ondataavailable = null;
+        }
+
+        if (recording.webcamRef.current) {
+          const stream = recording.webcamRef.current.srcObject as MediaStream;
+          stream?.getTracks().forEach((track) => track.stop());
+          recording.webcamRef.current.srcObject = null;
+          recording.webcamRef.current.load();
+        }
+        if (recording.objectURL) {
+          URL.revokeObjectURL(recording.objectURL);
+        }
+        await deleteRecording(recording.id);
+      } catch (error) {
+        try {
+          const recording = getRecording(recordingId);
+          setStatus(recording, STATUS.ERROR);
+        } catch { /* recording may not exist */ }
+        handleError('cancelRecording', error, recordingId);
       }
-      handleError('cancelRecording', error);
-    }
-  };
+    },
+    [getRecording, deleteRecording, setStatus, clearMaxDurationTimer, handleError]
+  );
 
-  const createRecording = async (
-    videoId?: string,
-    audioId?: string
-  ): Promise<Recording | void> => {
-    try {
-      const { devicesById, initialDevices } = devices || {};
+  const createRecording = useCallback(
+    async (
+      videoId?: string,
+      audioId?: string,
+      createOpts?: { audioOnly?: boolean }
+    ): Promise<Recording | void> => {
+      try {
+        const { devicesById, initialDevices } = devices || {};
+        const audioOnly = createOpts?.audioOnly ?? false;
 
-      const videoLabel = videoId
-        ? devicesById?.[videoId].label
-        : initialDevices?.video?.label;
+        const videoLabel = videoId
+          ? devicesById?.[videoId]?.label
+          : initialDevices?.video?.label;
 
-      const audioLabel = audioId
-        ? devicesById?.[audioId].label
-        : initialDevices?.audio?.label;
+        const audioLabel = audioId
+          ? devicesById?.[audioId]?.label
+          : initialDevices?.audio?.label;
 
-      const recordingId = `${videoId || initialDevices?.video?.deviceId}-${
-        audioId || initialDevices?.audio?.deviceId
-      }`;
-      const isCreated = isRecordingCreated(recordingId);
-      if (isCreated) throw new Error(ERROR_MESSAGES.SESSION_EXISTS);
+        const resolvedVideoId = videoId || initialDevices?.video?.deviceId || '';
+        const resolvedAudioId = audioId || initialDevices?.audio?.deviceId;
 
-      const recording = await setRecording({
-        videoId: <string>videoId || <string>initialDevices?.video?.deviceId,
-        audioId: <string>audioId || <string>initialDevices?.audio?.deviceId,
-        videoLabel,
-        audioLabel,
-      });
-      return recording;
-    } catch (error) {
-      handleError('createRecording', error);
-    }
-  };
+        if (!resolvedAudioId) {
+          throw new Error(ERROR_MESSAGES.NO_USER_PERMISSION);
+        }
+        if (!audioOnly && !resolvedVideoId) {
+          throw new Error(ERROR_MESSAGES.NO_USER_PERMISSION);
+        }
 
-  const applyRecordingOptions = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      if (options?.fileName) {
-        recording.fileName = options.fileName;
+        return await setRecording({
+          videoId: resolvedVideoId,
+          audioId: resolvedAudioId,
+          videoLabel,
+          audioLabel,
+          audioOnly,
+        });
+      } catch (error) {
+        handleError('createRecording', error);
       }
-      if (options?.fileType) {
-        recording.fileType = options.fileType;
-      }
-      const updatedRecording = await updateRecording(recording.id, recording);
-      return updatedRecording;
-    } catch (error) {
-      if (recordingId) {
+    },
+    [devices, setRecording, handleError]
+  );
+
+  const applyRecordingOptions = useCallback(
+    async (recordingId: string): Promise<Recording | void> => {
+      try {
         const recording = getRecording(recordingId);
-        if (recording) recording.status = STATUS.ERROR;
+        if (options?.fileName) recording.fileName = options.fileName;
+        if (options?.fileType) recording.fileType = options.fileType;
+        return await updateRecording(recording.id, recording);
+      } catch (error) {
+        try {
+          const recording = getRecording(recordingId);
+          setStatus(recording, STATUS.ERROR);
+        } catch { /* recording may not exist */ }
+        handleError('applyRecordingOptions', error, recordingId);
       }
-      handleError('applyRecordingOptions', error);
-    }
-  };
+    },
+    [options?.fileName, options?.fileType, getRecording, updateRecording, setStatus, handleError]
+  );
 
-  const clearPreview = async (
-    recordingId: string
-  ): Promise<Recording | void> => {
-    try {
-      const recording = getRecording(recordingId);
-      if (recording.previewRef.current) recording.previewRef.current.src = '';
-      recording.status = STATUS.INITIAL;
-      URL.revokeObjectURL(<string>recording.objectURL);
-      recording.blobChunks = [];
-      const updatedRecording = await updateRecording(recording.id, recording);
-      return updatedRecording;
-    } catch (error) {
-      if (recordingId) {
+  const clearPreview = useCallback(
+    async (recordingId: string): Promise<Recording | void> => {
+      try {
         const recording = getRecording(recordingId);
-        if (recording) recording.status = STATUS.ERROR;
+        if (recording.previewRef.current) recording.previewRef.current.src = '';
+        setStatus(recording, STATUS.INITIAL);
+        if (recording.objectURL) URL.revokeObjectURL(recording.objectURL);
+        recording.blobChunks = [];
+        recording.blob = undefined;
+        recording.objectURL = null;
+        recording.startedAt = null;
+        recording.pausedAt = null;
+        recording.totalPausedMs = 0;
+        return await updateRecording(recording.id, recording);
+      } catch (error) {
+        try {
+          const recording = getRecording(recordingId);
+          setStatus(recording, STATUS.ERROR);
+        } catch { /* recording may not exist */ }
+        handleError('clearPreview', error, recordingId);
       }
-      handleError('clearPreview', error);
-    }
-  };
+    },
+    [getRecording, updateRecording, setStatus, handleError]
+  );
 
-  const download = async (recordingId: string): Promise<void> => {
-    try {
-      const recording = getRecording(recordingId);
-      const downloadElement = document.createElement('a');
-
-      if (recording?.objectURL) {
-        downloadElement.href = recording.objectURL;
-      }
-
-      downloadElement.download = `${recording.fileName}.${recording.fileType}`;
-      downloadElement.click();
-    } catch (error) {
-      if (recordingId) {
+  const download = useCallback(
+    async (recordingId: string): Promise<void> => {
+      try {
         const recording = getRecording(recordingId);
-        if (recording) recording.status = STATUS.ERROR;
+        if (!recording?.objectURL) return;
+
+        if (isIOSDevice()) {
+          window.open(recording.objectURL, '_blank');
+        } else {
+          const a = document.createElement('a');
+          a.href = recording.objectURL;
+          a.download = `${recording.fileName}.${recording.fileType}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
+      } catch (error) {
+        handleError('download', error, recordingId);
       }
-      handleError('download', error);
-    }
-  };
+    },
+    [getRecording, handleError]
+  );
+
+  const getBlob = useCallback(
+    (recordingId: string): Blob | undefined => {
+      try {
+        const recording = getRecording(recordingId);
+        return recording?.blob;
+      } catch {
+        return undefined;
+      }
+    },
+    [getRecording]
+  );
 
   return {
     activeRecordings,
@@ -407,6 +418,7 @@ export function useRecorder({
     clearAllRecordings,
     clearPreview,
     download,
+    getBlob,
     cancelRecording,
     createRecording,
     muteRecording,

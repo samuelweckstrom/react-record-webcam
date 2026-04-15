@@ -1,235 +1,243 @@
-<div align="center">
-  <img alt="React Record Webcam Logo" style="width: 90%;" src="https://samuelweckstrom-github.s3.eu-central-1.amazonaws.com/react-record-webcam.svg">
-</div>
+# react-record-webcam
 
-<br>
+[![npm](https://img.shields.io/npm/v/react-record-webcam)](https://www.npmjs.com/package/react-record-webcam)
+[![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-record-webcam)](https://bundlephobia.com/package/react-record-webcam)
+[![license](https://img.shields.io/npm/l/react-record-webcam)](./LICENSE)
 
-[![TypeScript](https://badges.frapsoft.com/typescript/code/typescript.svg?v=101)](https://github.com/ellerbrock/typescript-badges/)
-[![Tests](https://github.com/samuelweckstrom/react-record-webcam/actions/workflows/ci-cd.yaml/badge.svg)](https://github.com/samuelweckstrom/react-record-webcam/actions/workflows/ci-cd.yaml)
-[![npm version](https://badge.fury.io/js/react-record-webcam.svg)](https://www.npmjs.com/package/react-record-webcam)
+React hook for webcam and audio recording with multi-device support, quality presets, screenshot capture, recording timer, and full TypeScript types. Zero dependencies beyond React.
 
-React Record Webcam is a promise-based, zero-dependency webcam library for React, enabling the selection of video and audio inputs for single or multiple concurrent recordings with any mix of video and audio sources.
+[Demo](https://samuel.weckstrom.dev/react-record-webcam/) &nbsp;|&nbsp; [Try on StackBlitz](https://stackblitz.com/~/github.com/samuelweckstrom/react-record-webcam)
 
-[Demo](https://samuel.weckstrom.xyz/react-record-webcam/)
+## Features
 
-[Try the example on StackBlitz](https://stackblitz.com/~/github.com/samuelweckstrom/react-record-webcam)
+- **Multi-device** &mdash; record from multiple webcams and microphones simultaneously
+- **Quality presets** &mdash; `low`, `medium`, `high`, `hd` with sensible defaults
+- **Recording timer** &mdash; `useRecordingTimer` hook with pause-aware elapsed time
+- **Screenshot capture** &mdash; grab a PNG frame from any live camera
+- **Audio-only mode** &mdash; record audio without video
+- **Pause / resume / mute** &mdash; full recording lifecycle control
+- **Max duration** &mdash; auto-stop recording after a time limit
+- **Device hot-plug** &mdash; device list updates when hardware is connected or removed
+- **Permissions API** &mdash; `cameraPermission` state without triggering the browser prompt
+- **Progressive upload** &mdash; `onDataAvailable` callback streams chunks in real-time
+- **Status callbacks** &mdash; `onStatusChange` fires on every state transition
+- **Structured errors** &mdash; typed `error` object with `code`, `message`, and `recordingId`
+- **Next.js ready** &mdash; ships with `"use client"` directive
+- **ESM + CJS** &mdash; dual-format build with full TypeScript declarations
+- **Tiny** &mdash; zero runtime dependencies
 
-<br>
-
-## Add package
+## Install
 
 ```bash
-npm i react-record-webcam
+npm install react-record-webcam
 ```
 
-<br>
+## Quick start
 
-## Quick Start
+```tsx
+import { useRecordWebcam } from 'react-record-webcam';
 
-To start recording, create a recording instance using `createRecording` and manage the recording process with the hook's methods:
+function App() {
+  const {
+    activeRecordings,
+    createRecording,
+    openCamera,
+    startRecording,
+    stopRecording,
+    download,
+  } = useRecordWebcam();
 
-```typescript
-import { useRecordWebcam } from 'react-record-webcam'
-
-const App = () => {
-  const { createRecording, openCamera, startRecording, stopRecording, downloadRecording } = useRecordWebcam()
-
-  const recordVideo = async () => {
+  const record = async () => {
     const recording = await createRecording();
+    if (!recording) return;
     await openCamera(recording.id);
     await startRecording(recording.id);
-    await new Promise(resolve => setTimeout(resolve, 3000)); // Record for 3 seconds
-    await stopRecording(recording.id);
-    await downloadRecording(recording.id); // Download the recording
   };
 
-  return <button onClick={recordVideo}>Record Video</button>;
-};
-```
-
-<br>
-
-## Usage and Examples
-
-Each method in the hook always returns an updated instance of a recording. Pass the `id` of the recording instance to any of the methods from the hook to open camera, start, pause or stop a recording:
-
-Heres an example of uploading the recorded blob to a back-end service:
-
-```typescript
-const { createRecording, openCamera, startRecording, stopRecording } = useRecordWebcam()
-
-
-async function record() {
-    const recording = await createRecording();
-
-    await openCamera(recording.id);
-    await startRecording(recording.id);
-    await new Promise((resolve) => setTimeout(resolve, 3000)); // Record for 3 seconds
-    const recorded = await stopRecording(recording.id);
-
-    // Upload the blob to a back-end
-    const formData = new FormData();
-    formData.append('file', recorded.blob, 'recorded.webm');
-
-    const response = await fetch('https://your-backend-url.com/upload', {
-        method: 'POST',
-        body: formData,
-    });
-};
-```
-
-All recording instances are available in `activeRecordings`. You can for example access refs for webcam feed and recording preview in your component:
-
-```typescript
-const { activeRecordings } = useRecordWebcam()
-
-...
-
-  {activeRecordings.map(recording => (
-    <div key={recording.id}>
-      <video ref={recording.webcamRef} autoPlay />
-      <video ref={recording.previewRef} autoPlay loop />
+  return (
+    <div>
+      <button onClick={record}>Record</button>
+      {activeRecordings.map((recording) => (
+        <div key={recording.id}>
+          <video ref={recording.webcamRef} autoPlay muted playsInline />
+          <video ref={recording.previewRef} autoPlay loop playsInline />
+          <button onClick={() => stopRecording(recording.id)}>Stop</button>
+          <button onClick={() => download(recording.id)}>Download</button>
+        </div>
+      ))}
     </div>
-  ))}
-```
-
-### Recording instance
-
-| Property | Type | Description |
-| --- | --- | --- |
-| `id` | `string` | The ID of the recording. |
-| `audioId` | `string` | The ID of the audio device. |
-| `audioLabel` | `string` | The label of the audio device. |
-| `blob` | `Blob` | The blob of the recording. |
-| `blobChunks` | `Blob[]` | Single blob or chunks per timeslice of the recording. |
-| `fileName` | `string` | The name of the file. |
-| `fileType` | `string` | The type of the file. |
-| `isMuted` | `boolean` | Whether the recording is muted. |
-| `mimeType` | `string` | The MIME type of the recording. |
-| `objectURL` | `string` \| `null` | The object URL of the recording. |
-| `previewRef` | `React.RefObject<HTMLVideoElement>` | React Ref for the preview element. |
-| `recorder` | `MediaRecorder` | The [MediaRecorder](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder) instance of the recording. |
-| `status` | `'INITIAL'` \| `'CLOSED'` \| `'OPEN'` \| `'RECORDING'` \| `'STOPPED'` \| `'ERROR'` \| `'PAUSED'` | The status of the recording. |
-| `videoId` | `string` | The ID of the video device. |
-| `videoLabel` | `string` | The label of the video device. |
-| `webcamRef` | `React.RefObject<HTMLVideoElement>` | React Ref for the webcam element. |
-
-<br>
-
-## Configuring options
-
-Pass options either when initializing the hook or at any point in your application logic using `applyOptions`.
-
-```typescript
-// At initialization
-const { applyOptions, applyConstraints } = useRecordWebcam({
-  options: { fileName: 'custom-name', fileType: 'webm', timeSlice: 1000 },
-  mediaRecorderOptions: { mimeType: 'video/webm; codecs=vp8' },
-  mediaTrackConstraints: { video: true, audio: true }
-});
-
-// Dynamically applying options
-applyOptions(recording.id, { fileName: 'updated-name' }); // Update file name
-applyConstraints(recording.id, { aspectRatio: 0.56 }) // Change aspect ratio to portrait
-```
-
-### List of options
-
-| Option | property | default value|
-| ------------- | ------------- | ------------- |
-|`fileName`| File name |`Date.now()`|
-|`fileType`| File type for download (will override inferred type from `mimeType`)  |`'webm'`|
-|`timeSlice`| Recording interval | `undefined`|
-
-<br>
-
-Both `mediaRecorderOptions` and `mediatrackConstraints` mirror the official API. Please see on MDN for available options:
-
-[MDN: mediaRecorderOptions](https://developer.mozilla.org/en-US/docs/Web/API/MediaRecorder/MediaRecorder#options)
-
-[MDN: mediatrackConstraints](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints#instance_properties)
-
-<br>
-
-## Codec Support
-
-A codec supported by the current browser will be detected and used for recordings.
-
-To see all video and audio codecs supported by the browser:
-
-```typescript
-const { supportedAudioCodecs, supportedVideoCodecs } = useRecordWebcam();
-
-console.log({ supportedAudioCodecs, supportedVideoCodecs })
-```
-
-To check the support of a specific codec:
-
-```typescript
-const { checkCodecRecordingSupport, checkVideoCodecPlaybackSupport } = useRecordWebcam()
-
-const codec = 'video/x-matroska;codecs=avc1'
-const isRecordingSupported = checkCodecRecordingSupport(codec)
-const isPlayBackSupported = checkVideoCodecPlaybackSupport(codec)
-```
-
-To use a specific codec, pass this in the mediaRecorderOptions. Note that MediaRecorder uses a mimeType format for the codec: `<container>;codec=<videoCodec>,<audioCodec>`
-
-```typescript
-const codec = 'video/webm;codecs=h264'
-const mediaRecorderOptions = { mimetype: codec }
-const recordWebcam = useRecordWebcam({ mediaRecorderOptions })
-```
-
-For more info see the codec guide on [MDN](https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Video_codecs).
-
-<br>
-
-## Error handling
-
-Error messages are available in the hook. You can import the constant of all messages for error handling from the package.
-
-```typescript
-import { useRecordWebcam, ERROR_MESSAGES } from 'react-record-webcam';
-
-const { errorMessage } = useRecordWebcam();
-
-if (errorMessage === ERROR_MESSAGES.NO_USER_PERMISSION) {
-  // Handle specific error scenario
+  );
 }
 ```
 
-<br>
+## Quality presets
 
-## API Reference
+Skip manual configuration with built-in presets:
 
-| Method/Property              | Arguments                                                     | Returns                                      | Description                                                                                                       |
-|------------------------------|---------------------------------------------------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------------------------|
-| `activeRecordings`           |                                                               | `Recording[]`                                | Array of active recordings.                                                                                       |
-| `applyConstraints`           | `recordingId: string, constraints: MediaTrackConstraints`     | `Promise<Recording \| void>`                 | Applies given constraints to the camera for a specific recording.                                                 |
-| `applyRecordingOptions`      | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Applies recording options to a specific recording.                                                                 |
-| `cancelRecording`            | `recordingId: string`                                          | `Promise<void>`                              | Cancels the current recording session.                                                                            |
-| `clearAllRecordings`         |                                                               | `Promise<void>`                              | Clears all active recordings.                                                                                     |
-| `clearError`                 |                                                               | `void`                                       | Function to clear the current error message.                                                                      |
-| `clearPreview`               | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Clears the preview of a specific recording.                                                                       |
-| `closeCamera`                | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Closes the camera for a specific recording.                                                                       |
-| `createRecording`            | `videoId?: string, audioId?: string`                          | `Promise<Recording \| void>`                 | Creates a new recording session with specified video and audio sources.                                           |
-| `devicesById`                |                                                               | `ById`                                       | Object containing devices by their ID, where `ById` is a record of `string` to `{ label: string; type: 'videoinput' \| 'audioinput'; }`. |
-| `devicesByType`              |                                                               | `ByType`                                     | Object categorizing devices by their type, where `ByType` has `video` and `audio` arrays of `{ label: string; deviceId: string; }`.     |
-| `download`                   | `recordingId: string`                                          | `Promise<void>`                              | Downloads a specific recording.                                                                                  |
-| `errorMessage`               |                                                               | `string \| null`                             | The current error message, if any, related to recording.                                                          |
-| `muteRecording`              | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Mutes or unmutes the recording audio.                                                                             |
-| `openCamera`                 | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Opens the camera for a specific recording with optional constraints.                                              |
-| `pauseRecording`             | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Pauses the current recording.                                                                                     |
-| `resumeRecording`            | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Resumes a paused recording.                                                                                       |
-| `startRecording`             | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Starts a new recording session.                                                                                   |
-| `stopRecording`              | `recordingId: string`                                          | `Promise<Recording \| void>`                 | Stops the current recording session.                                                                              |
-|
+```tsx
+const recorder = useRecordWebcam({ quality: 'high' });
+```
+
+| Preset   | Resolution | Video bitrate | Audio bitrate |
+| -------- | ---------- | ------------- | ------------- |
+| `low`    | 640x480    | 500 kbps      | 64 kbps       |
+| `medium` | 1280x720   | 1.5 Mbps      | 128 kbps      |
+| `high`   | 1920x1080  | 3 Mbps        | 192 kbps      |
+| `hd`     | 3840x2160  | 8 Mbps        | 256 kbps      |
+
+## Recording timer
+
+```tsx
+import { useRecordWebcam, useRecordingTimer } from 'react-record-webcam';
+
+function RecordingView({ recording }) {
+  const elapsed = useRecordingTimer(recording);
+
+  return (
+    <div>
+      <p>{Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, '0')}</p>
+      <video ref={recording.webcamRef} autoPlay muted playsInline />
+    </div>
+  );
+}
+```
+
+The timer correctly pauses when the recording is paused and resumes from the correct offset.
+
+## Audio-only recording
+
+```tsx
+const recording = await createRecording(undefined, undefined, { audioOnly: true });
+await openCamera(recording.id);
+await startRecording(recording.id);
+```
+
+## Screenshot capture
+
+```tsx
+const blob = await captureScreenshot(recording.id);
+// blob is a PNG image you can upload or display
+```
+
+## Progressive upload
+
+Stream recording chunks to a server in real-time:
+
+```tsx
+const recorder = useRecordWebcam({
+  options: { timeSlice: 1000 },
+  onDataAvailable: (recordingId, chunk) => {
+    fetch('/api/upload', { method: 'POST', body: chunk });
+  },
+});
+```
+
+## Auto-stop with max duration
+
+```tsx
+const recorder = useRecordWebcam({
+  options: { maxDuration: 30000 }, // 30 seconds
+});
+```
+
+## Status change callback
+
+```tsx
+const recorder = useRecordWebcam({
+  onStatusChange: (recordingId, oldStatus, newStatus) => {
+    console.log(`${recordingId}: ${oldStatus} -> ${newStatus}`);
+  },
+});
+```
+
+## API
+
+### `useRecordWebcam(args?)`
+
+Main hook. All arguments are optional.
+
+| Argument                 | Type                        | Description                                              |
+| ------------------------ | --------------------------- | -------------------------------------------------------- |
+| `mediaTrackConstraints`  | `MediaTrackConstraints`     | Video track constraints (e.g. `width`, `height`, `frameRate`). These are `MediaTrackConstraints` — **not** `MediaStreamConstraints`. Do not pass `video: true` or `audio: true` here; video and audio are always enabled by default. Use `createRecording(videoId, audioId, { audioOnly: true })` to record audio-only. |
+| `mediaRecorderOptions`   | `MediaRecorderOptions`      | Options for the `MediaRecorder` constructor               |
+| `options.fileName`       | `string`                    | Output file name (default: timestamp)                    |
+| `options.fileType`       | `string`                    | Output file extension (default: `webm`)                  |
+| `options.timeSlice`      | `number`                    | Chunk interval in ms for `MediaRecorder.start()`         |
+| `options.maxDuration`    | `number`                    | Auto-stop after this many ms                             |
+| `quality`                | `QualityPreset`             | `'low'` \| `'medium'` \| `'high'` \| `'hd'`             |
+| `onStatusChange`         | `(id, old, new) => void`   | Called on every status transition                        |
+| `onDataAvailable`        | `(id, chunk) => void`       | Called when a data chunk is available                    |
+
+### Return value
+
+| Property              | Type                                       | Description                                   |
+| --------------------- | ------------------------------------------ | --------------------------------------------- |
+| `activeRecordings`    | `Recording[]`                              | All current recordings                        |
+| `cameraPermission`    | `CameraPermission`                         | `'prompt'` \| `'granted'` \| `'denied'` \| `'unknown'` |
+| `devicesByType`       | `{ video, audio }`                         | Available devices grouped by type             |
+| `devicesById`         | `Record<string, { label, type }>`          | Devices keyed by ID                           |
+| `error`               | `RecordingError \| null`                   | Structured error with `code` and `message`    |
+| `errorMessage`        | `string \| null`                           | Error message string (backward compat)        |
+| `createRecording`     | `(videoId?, audioId?, opts?) => Promise`    | Create a new recording session                |
+| `openCamera`          | `(id) => Promise`                          | Open the camera stream                        |
+| `closeCamera`         | `(id) => Promise`                          | Close the camera stream                       |
+| `startRecording`      | `(id) => Promise`                          | Start recording                               |
+| `stopRecording`       | `(id) => Promise`                          | Stop recording                                |
+| `pauseRecording`      | `(id) => Promise`                          | Pause recording                               |
+| `resumeRecording`     | `(id) => Promise`                          | Resume recording                              |
+| `muteRecording`       | `(id) => Promise`                          | Toggle audio mute                             |
+| `cancelRecording`     | `(id) => Promise`                          | Cancel and remove a recording                 |
+| `captureScreenshot`   | `(id) => Promise<Blob \| void>`            | Capture a PNG screenshot from the webcam      |
+| `download`            | `(id) => Promise`                          | Download the recording                        |
+| `getBlob`             | `(id) => Blob \| undefined`               | Get the recording's Blob directly             |
+| `clearPreview`        | `(id) => Promise`                          | Clear the preview and reset                   |
+| `clearAllRecordings`  | `() => Promise`                            | Clear all recordings                          |
+| `clearError`          | `() => void`                               | Dismiss the current error                     |
+| `applyConstraints`    | `(id, constraints) => Promise`             | Apply new constraints to a live camera        |
+| `applyRecordingOptions` | `(id) => Promise`                        | Apply current options to a recording          |
+
+### `useRecordingTimer(recording?)`
+
+Returns the elapsed recording time in seconds. Handles pause/resume correctly.
+
+```tsx
+const elapsed = useRecordingTimer(recording); // number (seconds)
+```
+
+### `Recording`
+
+| Field          | Type                       | Description                              |
+| -------------- | -------------------------- | ---------------------------------------- |
+| `id`           | `string`                   | Unique recording identifier              |
+| `status`       | `Status`                   | Current status                           |
+| `audioOnly`    | `boolean`                  | Whether this is audio-only               |
+| `webcamRef`    | `RefObject`                | Attach to a `<video>` for live preview   |
+| `previewRef`   | `RefObject`                | Attach to a `<video>` for playback       |
+| `blob`         | `Blob \| undefined`        | The recorded blob (after stop)           |
+| `objectURL`    | `string \| null`           | Object URL for the blob                  |
+| `startedAt`    | `number \| null`           | Timestamp when recording started         |
+| `pausedAt`     | `number \| null`           | Timestamp when recording was paused      |
+| `totalPausedMs`| `number`                   | Total milliseconds spent paused          |
+| `isMuted`      | `boolean`                  | Whether audio is muted                   |
+| `recorder`     | `MediaRecorder \| null`    | The underlying MediaRecorder             |
+
+### `Status`
+
+`'INITIAL'` | `'OPEN'` | `'RECORDING'` | `'PAUSED'` | `'STOPPED'` | `'CLOSED'` | `'ERROR'`
+
+## Migrating from v1
+
+v2 is backward compatible for most users. Breaking changes:
+
+- **Minimum React version is now 18.0** (was 16.3). The store was rewritten to use `useSyncExternalStore`.
+- `createRecording` accepts an optional third argument `{ audioOnly: boolean }`.
+- New fields on `Recording` (`audioOnly`, `startedAt`, `pausedAt`, `totalPausedMs`) have safe defaults.
+- New return values (`error`, `cameraPermission`, `captureScreenshot`, `getBlob`) are additive.
+
+## Browser support
+
+Requires browsers with `MediaRecorder` and `getUserMedia` support. All modern browsers (Chrome, Firefox, Edge, Safari 14.1+).
 
 ## License
 
-[MIT](LICENSE)
-
-## Credits
-
-webcam by iconfield from <a href="https://thenounproject.com/browse/icons/term/webcam/" target="_blank" title="webcam Icons">Noun Project</a> (CC BY 3.0)
+MIT

@@ -11,10 +11,7 @@ function byId(devices: MediaDeviceInfo[]): ById {
   return devices.reduce<ById>(
     (result, { deviceId, kind, label }: MediaDeviceInfo) => {
       if (kind === 'videoinput' || kind === 'audioinput') {
-        result[deviceId] = {
-          label,
-          type: kind,
-        };
+        result[deviceId] = { label, type: kind };
       }
       return result;
     },
@@ -43,24 +40,21 @@ function byType(devices: MediaDeviceInfo[]): ByType {
       }
       return result;
     },
-    {
-      video: [],
-      audio: [],
-    }
+    { video: [], audio: [] }
   );
 }
 
-async function getUserPermission(): Promise<MediaDeviceInfo[]> {
+async function getUserPermission(): Promise<{
+  mediaDevices: MediaDeviceInfo[];
+  stream: MediaStream;
+}> {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: true,
       video: true,
     });
     const mediaDevices = await navigator.mediaDevices.enumerateDevices();
-    stream.getTracks().forEach((track) => {
-      track.stop();
-    });
-    return mediaDevices;
+    return { mediaDevices, stream };
   } catch (error) {
     throw new Error(ERROR_MESSAGES.NO_USER_PERMISSION);
   }
@@ -82,32 +76,72 @@ export type Devices = {
   initialDevices: InitialDevices;
 };
 
-export async function getDevices(): Promise<Devices> {
-  let devicesByType: ByType = {
-    video: [],
-    audio: [],
-  };
-  let devicesById: ById = {};
-  let initialDevices: InitialDevices = {
-    video: null,
-    audio: null,
-  };
+function buildDevices(mediaDevices: MediaDeviceInfo[]): Devices {
+  const devicesById = byId(mediaDevices);
+  const devicesByType = byType(mediaDevices);
+  const firstVideo = devicesByType.video[0];
+  const firstAudio = devicesByType.audio[0];
 
-  if (typeof window !== 'undefined') {
-    const mediaDevices = await getUserPermission();
-    devicesById = byId(mediaDevices);
-    devicesByType = byType(mediaDevices);
-    initialDevices = {
-      video: {
-        deviceId: devicesByType.video[0].deviceId,
-        label: devicesByType.video[0].label,
-      },
-      audio: {
-        deviceId: devicesByType.audio[0].deviceId,
-        label: devicesByType.audio[0].label,
-      },
+  return {
+    devicesById,
+    devicesByType,
+    initialDevices: {
+      video: firstVideo
+        ? { deviceId: firstVideo.deviceId, label: firstVideo.label }
+        : null,
+      audio: firstAudio
+        ? { deviceId: firstAudio.deviceId, label: firstAudio.label }
+        : null,
+    },
+  };
+}
+
+export async function getDevices(): Promise<Devices> {
+  if (typeof window === 'undefined') {
+    return {
+      devicesByType: { video: [], audio: [] },
+      devicesById: {},
+      initialDevices: { video: null, audio: null },
     };
   }
 
-  return { devicesByType, devicesById, initialDevices };
+  const { mediaDevices, stream } = await getUserPermission();
+  stream.getTracks().forEach((track) => track.stop());
+  return buildDevices(mediaDevices);
+}
+
+/**
+ * Lightweight device refresh that skips getUserMedia.
+ * Works after initial permission has already been granted.
+ */
+export async function refreshDeviceList(): Promise<Devices> {
+  if (typeof window === 'undefined') {
+    return {
+      devicesByType: { video: [], audio: [] },
+      devicesById: {},
+      initialDevices: { video: null, audio: null },
+    };
+  }
+
+  const mediaDevices = await navigator.mediaDevices.enumerateDevices();
+  return buildDevices(mediaDevices);
+}
+
+export type CameraPermission = 'prompt' | 'granted' | 'denied' | 'unknown';
+
+export async function checkCameraPermission(): Promise<CameraPermission> {
+  try {
+    if (
+      typeof navigator === 'undefined' ||
+      !navigator.permissions?.query
+    ) {
+      return 'unknown';
+    }
+    const result = await navigator.permissions.query({
+      name: 'camera' as PermissionName,
+    });
+    return result.state as CameraPermission;
+  } catch {
+    return 'unknown';
+  }
 }

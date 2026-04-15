@@ -1,7 +1,7 @@
-import { createRef } from 'react';
+import { createRef, useCallback } from 'react';
 
-import { createStore, useStore } from './store';
-import { defaultCodec } from './codec';
+import { ExternalStore, useExternalStore } from './store';
+import { defaultCodec, videoContainer } from './codec';
 
 export const ERROR_MESSAGES = {
   CODEC_NOT_SUPPORTED: 'CODEC_NOT_SUPPORTED',
@@ -23,109 +23,75 @@ export const STATUS = {
 export type Status = keyof typeof STATUS;
 
 export type Recording = {
-  /**
-   * @property {string} id - The ID of the recording.
-   */
   id: string;
-  /**
-   * @property {string} id - The ID of the audio device.
-   */
   audioId: string;
-  /**
-   * @property {string} [audioLabel] - The label of the audio device.
-   */
   audioLabel?: string;
-  /**
-   * @property {Blob} [blob] - The blob of the recording.
-   */
+  audioOnly: boolean;
   blob?: Blob;
-  /**
-   * @property {Blob[]} blobChunks - Single blob or chunks per timeslice of the recording.
-   */
   blobChunks: Blob[];
-  /**
-   * @property {string} fileName - The name of the file.
-   */
   fileName: string;
-  /**
-   * @property {string} fileType - The type of the file.
-   */
   fileType: string;
-  /**
-   * @property {boolean} isMuted - Whether the recording is muted.
-   */
   isMuted: boolean;
-  /**
-   * @property {string} mimeType - The MIME type of the recording.
-   */
   mimeType: string;
-  /**
-   * @property {string | null} objectURL - The object URL of the recording.
-   */
   objectURL: string | null;
-  /**
-   * @property {React.RefObject<HTMLVideoElement>} previewRef - React Ref for the preview element.
-   */
-  previewRef: React.RefObject<HTMLVideoElement>;
-  /**
-   * @property {MediaRecorder | null} recorder - The MediaRecoder instance of the recording.
-   */
+  pausedAt: number | null;
+  previewRef: React.RefObject<HTMLVideoElement | null>;
   recorder: MediaRecorder | null;
-  /**
-   * @property {Status} status - The status of the recording.
-   */
+  startedAt: number | null;
   status: Status;
-  /**
-   * @property {string} videoId - The ID of the video device.
-   */
+  totalPausedMs: number;
   videoId: string;
-  /**
-   * @property {string} [videoLabel] - The label of the video device.
-   */
   videoLabel?: string;
-  /**
-   * @property {React.RefObject<HTMLVideoElement>} webcamRef - React Ref for the webcam element.
-   */
-  webcamRef: React.RefObject<HTMLVideoElement>;
+  webcamRef: React.RefObject<HTMLVideoElement | null>;
+};
+
+export type RecordingError = {
+  code: string;
+  message: string;
+  recordingId?: string;
 };
 
 type SetRecording = Pick<
   Recording,
   'videoId' | 'audioId' | 'videoLabel' | 'audioLabel'
->;
+> & { audioOnly?: boolean };
+
+let idCounter = 0;
 
 export function createRecording({
   videoId,
   audioId,
   videoLabel,
   audioLabel,
+  audioOnly,
 }: SetRecording): Recording {
-  const recordingId = `${videoId}-${audioId}`;
+  idCounter++;
+  const recordingId = audioOnly
+    ? `audio-${audioId}-${idCounter}`
+    : `${videoId}-${audioId}-${idCounter}`;
 
-  const recording: Recording = {
+  return {
     id: recordingId,
     audioId,
     audioLabel,
+    audioOnly: audioOnly ?? false,
     blobChunks: [],
     fileName: String(new Date().getTime()),
-    fileType: 'webm',
+    fileType: videoContainer || 'webm',
     isMuted: false,
     mimeType: defaultCodec,
     objectURL: null,
+    pausedAt: null,
     previewRef: createRef(),
     recorder: null,
+    startedAt: null,
     status: STATUS.INITIAL,
+    totalPausedMs: 0,
     videoId,
     videoLabel,
     webcamRef: createRef(),
   };
-  return recording;
 }
-
-export type RecordingError = {
-  recordingId?: string;
-  message: string;
-};
 
 type RecordingStore = {
   activeRecordings: Recording[];
@@ -140,31 +106,27 @@ type RecordingStore = {
   ) => Promise<Recording>;
 };
 
-const recordingMap: Map<string, Recording> = new Map();
-const store = createStore(recordingMap);
+const store = new ExternalStore<Recording>();
 
 export function useRecordingStore(): RecordingStore {
-  const { state } = useStore(store);
-  const activeRecordings = Array.from(recordingMap?.values?.());
+  const activeRecordings = useExternalStore(store);
 
-  const clearAllRecordings = async (): Promise<void> => {
-    Array.from(state.values()).forEach((recording) => {
-      const stream = <MediaStream>recording.webcamRef.current?.srcObject;
-
+  const clearAllRecordings = useCallback(async (): Promise<void> => {
+    for (const recording of store.values()) {
+      const stream = recording.webcamRef.current?.srcObject as MediaStream | null;
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
       }
-    });
-    state.clear(true);
-  };
+    }
+    store.clear();
+  }, []);
 
   const isRecordingCreated = (recordingId: string): boolean => {
-    const isCreated = state.get(recordingId);
-    return Boolean(isCreated);
+    return store.has(recordingId);
   };
 
   const getRecording = (recordingId: string): Recording => {
-    const recording = state.get(recordingId);
+    const recording = store.get(recordingId);
     if (!recording) {
       throw new Error(ERROR_MESSAGES.NO_RECORDING_WITH_ID);
     }
@@ -173,28 +135,19 @@ export function useRecordingStore(): RecordingStore {
 
   const setRecording = async (params: SetRecording): Promise<Recording> => {
     const recording = createRecording(params);
-    const newRecording = state.set(recording.id, recording, true);
-    return newRecording;
+    return store.set(recording.id, recording);
   };
 
   const updateRecording = async (
     recordingId: string,
     updatedValues: Partial<Recording>
   ): Promise<Recording> => {
-    const recording = <Recording>state.get(recordingId);
-    const updatedRecording = state.set(
-      recordingId,
-      {
-        ...recording,
-        ...updatedValues,
-      },
-      true
-    );
-    return updatedRecording;
+    const recording = store.get(recordingId);
+    return store.set(recordingId, { ...recording, ...updatedValues } as Recording);
   };
 
   const deleteRecording = async (recordingId: string): Promise<void> => {
-    state.delete(recordingId, true);
+    store.delete(recordingId);
   };
 
   return {

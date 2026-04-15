@@ -1,41 +1,64 @@
-import { createStore } from '../store';
+import { ExternalStore } from '../store';
 
-describe('createStore', () => {
-  let updateCount = 0;
-  const mockStateUpdater = jest.fn(() => updateCount++);
-
+describe('ExternalStore', () => {
   it('should create a store and allow getting and setting values', () => {
-    const initialStore = new Map();
-    const store = createStore(initialStore)(mockStateUpdater);
+    const store = new ExternalStore<string>();
 
     expect(store.get('key')).toBeUndefined();
 
-    store.set('key', 'value', true);
+    store.set('key', 'value');
     expect(store.get('key')).toBe('value');
-    expect(mockStateUpdater).toHaveBeenCalled();
   });
 
-  it('should trigger updates when specified', () => {
-    const initialStore = new Map([['key', 'value']]);
-    const store = createStore(initialStore)(mockStateUpdater);
+  it('should notify listeners on set', () => {
+    const store = new ExternalStore<string>();
+    const listener = jest.fn();
+    store.subscribe(listener);
 
-    expect(store.get('key')).toBe('value');
-    store.set('key', 'updatedValue', true);
-    expect(store.get('key')).toBe('updatedValue');
-    expect(updateCount).toBeGreaterThan(0);
+    store.set('key', 'value');
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('should update snapshot on set', () => {
+    const store = new ExternalStore<string>();
+    expect(store.getSnapshot()).toEqual([]);
+
+    store.set('key', 'value');
+    expect(store.getSnapshot()).toEqual(['value']);
   });
 
   it('should handle clear and delete operations', () => {
-    const initialStore = new Map([
-      ['key1', 'value1'],
-      ['key2', 'value2'],
-    ]);
-    const store = createStore(initialStore)(mockStateUpdater);
+    const store = new ExternalStore<string>();
+    store.set('key1', 'value1');
+    store.set('key2', 'value2');
 
-    store.delete('key1', true);
+    store.delete('key1');
     expect(store.has('key1')).toBe(false);
+    expect(store.getSnapshot()).toEqual(['value2']);
 
-    store.clear(true);
+    store.clear();
     expect(store.size).toBe(0);
+    expect(store.getSnapshot()).toEqual([]);
+  });
+
+  it('should unsubscribe listeners', () => {
+    const store = new ExternalStore<string>();
+    const listener = jest.fn();
+    const unsub = store.subscribe(listener);
+
+    store.set('key', 'value');
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsub();
+    store.set('key2', 'value2');
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('should return stable snapshot reference when unchanged', () => {
+    const store = new ExternalStore<string>();
+    store.set('key', 'value');
+    const snap1 = store.getSnapshot();
+    const snap2 = store.getSnapshot();
+    expect(snap1).toBe(snap2);
   });
 });

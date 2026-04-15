@@ -1,14 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-.grid-cols-custom {
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-}
+@import "tailwindcss";
 
 html,
 body {
   font-size: 16px;
-  font-family: Arial, Helvetica, sans-serif;
-  background-color: #222;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background-color: #0f0f10;
+  color: #e4e4e7;
 }
