@@ -1,17 +1,20 @@
 {
   "private": true,
-  "workspaces": [
-    "demo",
-    "react-record-webcam"
-  ],
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "demo": "npm run dev -w demo",
-    "package": "npm run dev -w react-record-webcam",
-    "build:demo": "npm run build -w demo",
-    "build:package": "npm run build -w react-record-webcam",
-    "build:all": "npm run build:package && npm run build:demo",
+    "demo": "pnpm --filter demo dev",
+    "package": "pnpm --filter react-record-webcam dev",
+    "build:demo": "pnpm --filter demo build",
+    "build:package": "pnpm --filter react-record-webcam build",
+    "build:all": "pnpm run build:package && pnpm run build:demo",
     "test": "jest",
     "test:clearCache": "jest --clearCache"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "unrs-resolver"
+    ]
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.0",
