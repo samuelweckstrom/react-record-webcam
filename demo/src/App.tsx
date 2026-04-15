@@ -176,9 +176,22 @@ export function App() {
         {/* Header */}
         <header className="mb-8 flex items-end justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-white">
-              react-record-webcam
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-semibold tracking-tight text-white">
+                react-record-webcam
+              </h1>
+              <a
+                href="https://github.com/samuelweckstrom/react-record-webcam"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-zinc-500 hover:text-zinc-300 transition-colors"
+                aria-label="GitHub repository"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+                  <path d="M12 2C6.477 2 2 6.484 2 12.021c0 4.428 2.865 8.185 6.839 9.504.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.605-3.369-1.342-3.369-1.342-.454-1.154-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.026 2.747-1.026.546 1.378.202 2.397.1 2.65.64.7 1.028 1.595 1.028 2.688 0 3.848-2.338 4.695-4.566 4.943.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.741 0 .267.18.578.688.48C19.138 20.2 22 16.447 22 12.021 22 6.484 17.523 2 12 2z" />
+                </svg>
+              </a>
+            </div>
             <p className="mt-1 text-sm text-zinc-500">
               Webcam &amp; audio recording hook for React
             </p>
@@ -232,43 +245,31 @@ export function App() {
           </div>
 
           {/* Device + quality row */}
-          <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-end gap-3">
             <FieldLabel label="Video device">
-              <select
-                value={videoDeviceId}
-                onChange={(e) => setVideoDeviceId(e.target.value)}
-                disabled={audioOnly}
-                className="h-9 min-w-[160px] rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-zinc-200 outline-none disabled:opacity-40 focus:border-zinc-500"
-              >
+              <SelectInput value={videoDeviceId} onChange={setVideoDeviceId} disabled={audioOnly} className="h-9 min-w-[160px]">
                 <option value="">Default</option>
                 {devicesByType?.video.map((d) => (
-                  <option key={d.deviceId} value={d.deviceId}>
-                    {d.label}
-                  </option>
+                  <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
                 ))}
-              </select>
+              </SelectInput>
             </FieldLabel>
 
             <FieldLabel label="Audio device">
-              <select
-                value={audioDeviceId}
-                onChange={(e) => setAudioDeviceId(e.target.value)}
-                className="h-9 min-w-[160px] rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-zinc-200 outline-none focus:border-zinc-500"
-              >
+              <SelectInput value={audioDeviceId} onChange={setAudioDeviceId} className="h-9 min-w-[160px]">
                 <option value="">Default</option>
                 {devicesByType?.audio.map((d) => (
-                  <option key={d.deviceId} value={d.deviceId}>
-                    {d.label}
-                  </option>
+                  <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
                 ))}
-              </select>
+              </SelectInput>
             </FieldLabel>
 
             <FieldLabel label="Quality preset">
-              <select
+              <SelectInput
                 value={quality}
-                onChange={(e) => {
-                  const q = e.target.value as QualityPreset | '';
+                onChange={(v) => {
+                  const q = v as QualityPreset | '';
                   setQuality(q);
                   if (q) {
                     const p = QUALITY_PRESETS[q];
@@ -282,17 +283,18 @@ export function App() {
                     }));
                   }
                 }}
-                className="h-9 w-[110px] rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-zinc-200 outline-none focus:border-zinc-500"
+                className="h-9 w-[110px]"
               >
                 <option value="">Custom</option>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
                 <option value="hd">HD (4K)</option>
-              </select>
+              </SelectInput>
             </FieldLabel>
 
-            <div className="flex items-end gap-2">
+            </div>
+            <div className="flex items-center gap-2">
               <Toggle
                 label="Audio only"
                 checked={audioOnly}
@@ -304,13 +306,6 @@ export function App() {
                 onChange={setMirrorPreview}
               />
             </div>
-
-            <button
-              onClick={handleCreate}
-              className="h-9 cursor-pointer rounded-lg bg-white px-5 text-sm font-semibold text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200 ml-auto"
-            >
-              {audioOnly ? '+ Start audio' : '+ Open camera'}
-            </button>
           </div>
 
           {/* Advanced options — always visible */}
@@ -380,6 +375,15 @@ export function App() {
               step="100000"
               disabled={!!quality}
             />
+          </div>
+
+          <div className="mt-5 border-t border-zinc-800 pt-5">
+            <button
+              onClick={handleCreate}
+              className="w-full h-9 cursor-pointer rounded-lg bg-white text-sm font-semibold text-zinc-900 hover:bg-zinc-100 active:bg-zinc-200"
+            >
+              {audioOnly ? '+ Start audio' : '+ Open camera'}
+            </button>
           </div>
         </div>
 
@@ -680,6 +684,38 @@ function FieldLabel({
   );
 }
 
+function SelectInput({
+  value,
+  onChange,
+  disabled,
+  className,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  disabled?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={`relative inline-flex rounded-lg border border-zinc-700 bg-zinc-800 focus-within:border-zinc-500 ${disabled ? 'opacity-40' : ''} ${className ?? ''}`}>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className="h-full w-full appearance-none bg-transparent pl-3 pr-10 text-sm text-zinc-200 outline-none"
+      >
+        {children}
+      </select>
+      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center self-stretch border-l border-zinc-700 px-2">
+        <svg viewBox="0 0 10 6" fill="none" className="h-2.5 w-2.5 text-zinc-400" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M1 1l4 4 4-4" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 function OptionField({
   label,
   value,
@@ -704,18 +740,11 @@ function OptionField({
     <label className="flex flex-col gap-1.5 text-xs text-zinc-400">
       {label}
       {type === 'select' && selectOptions ? (
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
-          className={inputClass}
-        >
+        <SelectInput value={value} onChange={onChange} disabled={disabled} className="h-8">
           {selectOptions.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
+            <option key={opt} value={opt}>{opt}</option>
           ))}
-        </select>
+        </SelectInput>
       ) : (
         <input
           type={type}
