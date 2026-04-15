@@ -1,7 +1,6 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
+/** @type {import('@jest/types').Config.InitialOptions} */
 module.exports = {
   roots: ['<rootDir>/react-record-webcam/'],
-  preset: 'ts-jest',
   testEnvironmentOptions: { url: 'http://localhost' },
   transformIgnorePatterns: ['/node_modules/'],
   verbose: true,
@@ -13,11 +12,6 @@ module.exports = {
   setupFilesAfterEnv: ['@testing-library/jest-dom', '<rootDir>/setupTests.ts'],
   testEnvironment: 'jsdom',
   transform: {
-    '^.+\\.ts?$': [
-      'ts-jest',
-      {
-        tsconfig: 'jest.tsconfig.json',
-      },
-    ],
+    '^.+\\.tsx?$': ['@swc/jest'],
   },
 };
