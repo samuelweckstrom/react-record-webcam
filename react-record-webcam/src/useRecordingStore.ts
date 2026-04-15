@@ -1,4 +1,4 @@
-import { createRef } from 'react';
+import { createRef, useCallback } from 'react';
 
 import { ExternalStore, useExternalStore } from './store';
 import { defaultCodec, videoContainer } from './codec';
@@ -111,7 +111,7 @@ const store = new ExternalStore<Recording>();
 export function useRecordingStore(): RecordingStore {
   const activeRecordings = useExternalStore(store);
 
-  const clearAllRecordings = async (): Promise<void> => {
+  const clearAllRecordings = useCallback(async (): Promise<void> => {
     for (const recording of store.values()) {
       const stream = recording.webcamRef.current?.srcObject as MediaStream | null;
       if (stream) {
@@ -119,7 +119,7 @@ export function useRecordingStore(): RecordingStore {
       }
     }
     store.clear();
-  };
+  }, []);
 
   const isRecordingCreated = (recordingId: string): boolean => {
     return store.has(recordingId);

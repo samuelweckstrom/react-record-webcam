@@ -38,7 +38,13 @@ export type Options = {
  * Configuration options for the `useRecordWebcam` hook.
  */
 export type UseRecordWebcamArgs = {
-  /** Media track constraints for the camera. */
+  /**
+   * Constraints applied to the video track via `getUserMedia` (e.g. `width`,
+   * `height`, `frameRate`, `aspectRatio`). This is `MediaTrackConstraints` —
+   * **not** `MediaStreamConstraints`. Do not pass `video` or `audio` here;
+   * both are always requested. To record audio-only, pass
+   * `{ audioOnly: true }` as the third argument to `createRecording`.
+   */
   mediaTrackConstraints?: Partial<MediaTrackConstraints>;
   /** Options for the MediaRecorder API. */
   mediaRecorderOptions?: Partial<MediaRecorderOptions>;

@@ -156,7 +156,7 @@ Main hook. All arguments are optional.
 
 | Argument                 | Type                        | Description                                              |
 | ------------------------ | --------------------------- | -------------------------------------------------------- |
-| `mediaTrackConstraints`  | `MediaTrackConstraints`     | Constraints for `getUserMedia` video track               |
+| `mediaTrackConstraints`  | `MediaTrackConstraints`     | Video track constraints (e.g. `width`, `height`, `frameRate`). These are `MediaTrackConstraints` — **not** `MediaStreamConstraints`. Do not pass `video: true` or `audio: true` here; video and audio are always enabled by default. Use `createRecording(videoId, audioId, { audioOnly: true })` to record audio-only. |
 | `mediaRecorderOptions`   | `MediaRecorderOptions`      | Options for the `MediaRecorder` constructor               |
 | `options.fileName`       | `string`                    | Output file name (default: timestamp)                    |
 | `options.fileType`       | `string`                    | Output file extension (default: `webm`)                  |
