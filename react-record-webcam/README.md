@@ -6,6 +6,8 @@
 
 React hook for webcam and audio recording with multi-device support, quality presets, screenshot capture, recording timer, and full TypeScript types. Zero dependencies beyond React.
 
+[Demo](https://samuel.weckstrom.dev/react-record-webcam/) &nbsp;|&nbsp; [Try on StackBlitz](https://stackblitz.com/~/github.com/samuelweckstrom/react-record-webcam)
+
 ## Features
 
 - **Multi-device** &mdash; record from multiple webcams and microphones simultaneously
