@@ -86,9 +86,41 @@ export type UseRecordWebcam = {
   UseRecorder;
 
 /**
- * React Record Webcam hook.
- * @param args Configuration options for the hook.
- * @returns Webcam recording controls, state, and device info.
+ * React hook for recording webcam and audio.
+ *
+ * Required call order: `createRecording` → `openCamera` → `startRecording` → `stopRecording`
+ *
+ * @param args - Configuration options for the hook. All arguments are optional.
+ * @returns Webcam recording controls, reactive state, and device info.
+ *
+ * @example
+ * ```tsx
+ * const {
+ *   activeRecordings,
+ *   createRecording,
+ *   openCamera,
+ *   startRecording,
+ *   stopRecording,
+ *   download,
+ * } = useRecordWebcam();
+ *
+ * const record = async () => {
+ *   const recording = await createRecording(); // may return undefined — always guard
+ *   if (!recording) return;
+ *   await openCamera(recording.id);    // status → OPEN
+ *   await startRecording(recording.id); // status → RECORDING
+ * };
+ *
+ * // Attach refs to separate <video> elements:
+ * // webcamRef  → live camera preview
+ * // previewRef → playback after stopRecording
+ * <video ref={recording.webcamRef} autoPlay muted playsInline />
+ * <video ref={recording.previewRef} autoPlay loop playsInline />
+ *
+ * // recording.blob is set only after stopRecording resolves
+ * await stopRecording(recording.id);
+ * await download(recording.id);
+ * ```
  */
 export function useRecordWebcam({
   mediaRecorderOptions,

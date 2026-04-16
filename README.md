@@ -1,4 +1,6 @@
-# react-record-webcam
+<h1 align="center">
+  <img alt="React Record Webcam" style="width: 90%;" src="https://samuelweckstrom-github.s3.eu-central-1.amazonaws.com/react-record-webcam.svg">
+</h1>
 
 [![npm](https://img.shields.io/npm/v/react-record-webcam)](https://www.npmjs.com/package/react-record-webcam)
 [![npm bundle size](https://img.shields.io/bundlephobia/minzip/react-record-webcam)](https://bundlephobia.com/package/react-record-webcam)
