@@ -2,47 +2,90 @@ name: CI/CD
 
 on:
   push:
-    branches: [ '**' ]
+    branches: ["**"]
 
 jobs:
+  # ── Test ─────────────────────────────────────────────────────────────────
   test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'pnpm'
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm test
 
-  deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: test
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
         with:
-          run_install: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'pnpm'
+          node-version: "20.x"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - run: pnpm test
+
+  # ── Build ────────────────────────────────────────────────────────────────
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Build package
         run: pnpm run build:package
+
       - name: Build demo
         run: pnpm run build:demo
+
+      # Upload artifact for GitHub Pages deployment
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo/dist
+
+      # Upload artifact for S3 deployment
+      - name: Upload demo dist artifact
+        if: github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-dist
+          path: demo/dist
+
+  # ── Deploy → GitHub Pages ─────────────────────────────────────────────────
+  deploy-pages:
+    if: github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ── Deploy → S3 + CloudFront ──────────────────────────────────────────────
+  deploy-s3:
+    if: github.ref == 'refs/heads/master'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: demo-dist
+          path: demo/dist
 
       - name: Deploy to S3
         uses: jakejarvis/s3-sync-action@v0.5.1
@@ -52,15 +95,15 @@ jobs:
           AWS_S3_BUCKET: ${{ secrets.AWS_BUCKET_NAME }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET }}
-          AWS_REGION: 'eu-central-1'
-          SOURCE_DIR: 'demo/dist'
-          DEST_DIR: 'react-record-webcam'
+          AWS_REGION: "eu-central-1"
+          SOURCE_DIR: "demo/dist"
+          DEST_DIR: "react-record-webcam"
 
       - name: Invalidate CloudFront cache
         uses: chetan/invalidate-cloudfront-action@v1
         env:
           DISTRIBUTION: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
-          PATHS: '/react-record-webcam/*'
-          AWS_REGION: 'eu-central-1'
+          PATHS: "/react-record-webcam/*"
+          AWS_REGION: "eu-central-1"
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET }}
