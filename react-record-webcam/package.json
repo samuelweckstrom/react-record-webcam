@@ -60,5 +60,9 @@
     "typescript"
   ],
   "sideEffects": false,
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/react": "^19.2.14"
+  }
 }
